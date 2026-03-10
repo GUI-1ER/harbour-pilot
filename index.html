@@ -1,0 +1,2774 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1">
+<meta name="theme-color" content="#040810">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HarbourPilot">
+<link rel="manifest" href="./manifest.json">
+<title>HARBOUR PILOT</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+.leaflet-container{font-family:'Segoe UI',sans-serif}
+.leaflet-popup-content-wrapper{background:#0e1a28;border:1px solid rgba(0,212,255,0.2);color:#dde8f2;border-radius:8px}
+.leaflet-popup-tip{background:#0e1a28}
+.leaflet-popup-content{margin:10px 14px;font-size:11px}
+.leaflet-popup-content b{color:#00d4ff}
+</style>
+<style>
+:root{
+  --bg:#04070c;--bg2:#090f18;--bg3:#0c1420;
+  --border:rgba(255,255,255,0.07);--border2:rgba(0,212,255,0.13);
+  --cyan:#00d4ff;--orange:#ff8c42;--green:#2ed573;--red:#ff4757;--purple:#a78bfa;--teal:#34d399;
+  --muted:rgba(255,255,255,0.38);--dim:rgba(255,255,255,0.14)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:#dde8f2;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:40vh;background:radial-gradient(ellipse 80% 35% at 50% -5%,rgba(0,65,110,0.13),transparent);pointer-events:none;z-index:0}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:4px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fade{animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── TOP BAR ── */
+.bar{position:sticky;top:0;z-index:500;display:flex;justify-content:space-between;align-items:center;padding:8px 20px;background:rgba(4,7,12,0.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-ico{width:28px;height:28px;background:rgba(0,212,255,0.06);border:1px solid var(--border2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.logo-t{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.logo-s{font-size:7px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
+.bar-r{display:flex;align-items:center;gap:12px}
+#port-ind{font-size:10px;color:var(--muted);font-family:monospace;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clk{font-family:monospace;font-size:12px;color:var(--cyan);font-weight:700}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+
+/* ── LAYOUT ── */
+.main{max-width:1080px;margin:0 auto;padding:16px 13px;position:relative;z-index:1}
+h1{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px}
+.sub{font-size:11px;color:var(--muted);margin-bottom:13px}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,0.02);border-radius:9px;padding:3px;width:fit-content;margin-bottom:11px;border:1px solid var(--border)}
+.tab{padding:5px 16px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-size:12px;font-weight:500;font-family:inherit;transition:all .15s}
+.tab.on{background:rgba(0,212,255,0.08);color:var(--cyan);box-shadow:inset 0 0 0 1px rgba(0,212,255,0.17)}
+.panel{display:none}.panel.on{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:13px}
+.ct{font-size:9px;color:var(--cyan);letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px;font-family:monospace}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+hr.div{border:none;border-top:1px solid var(--border);margin:10px 0}
+
+/* ── INPUTS ── */
+.lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:3px}
+input[type=number],input[type=text],select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:7px;padding:6px 9px;color:#dde8f2;font-family:monospace;font-size:13px;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:rgba(0,212,255,0.3)}
+select option{background:#0c1520}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:2px;cursor:pointer;outline:none;margin-top:4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg)}
+
+/* ── SEL BUTTONS ── */
+.sg{display:grid;gap:4px}
+.sb{padding:6px 4px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:rgba(255,255,255,0.02);color:var(--muted);font-size:10px;text-align:center;font-family:inherit;transition:all .15s;line-height:1.3}
+.sb .ic{font-size:14px;display:block;margin-bottom:2px}
+.sb.on{background:rgba(0,212,255,0.07);color:var(--cyan);border-color:rgba(0,212,255,0.22)}
+
+/* ── IMO SEARCH ── */
+.imo-box{display:flex;gap:6px;margin-bottom:9px}
+.imo-box input{flex:1}
+.imo-btn{padding:6px 14px;border-radius:7px;border:1px solid var(--border2);background:rgba(0,212,255,0.08);color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+.imo-btn:hover{background:rgba(0,212,255,0.14)}
+.imo-result{background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.1);border-radius:8px;padding:8px 11px;font-size:11px;margin-bottom:9px;display:none}
+
+/* ── PORT / BERTHS ── */
+.preg{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.15em;margin:8px 0 4px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:3px}
+.pbtn{padding:6px 7px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:rgba(255,255,255,0.02);color:var(--muted);font-size:10px;font-weight:600;text-align:left;font-family:inherit;transition:all .15s}
+.pbtn.on{background:rgba(0,212,255,0.07);color:var(--cyan);border-color:rgba(0,212,255,0.2)}
+.geo-box{background:rgba(0,38,80,0.14);border:1px solid rgba(0,100,160,0.1);border-radius:9px;padding:9px 12px;margin-bottom:8px}
+.geo-t{font-size:8px;color:rgba(0,180,255,0.45);letter-spacing:.15em;text-transform:uppercase;margin-bottom:5px;font-family:monospace}
+.bl{display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;margin-bottom:7px}
+.bb{padding:7px 10px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:rgba(255,255,255,0.02);display:flex;justify-content:space-between;align-items:center;font-family:inherit;color:#dde8f2;text-align:left;transition:all .15s}
+.bb:hover{background:rgba(255,255,255,0.04)}.bb.on{background:rgba(0,212,255,0.05);border-color:rgba(0,212,255,0.18)}.bb.blk{border-color:rgba(255,71,87,0.18)}
+.alrt{display:flex;gap:7px;padding:7px 9px;border-radius:7px;margin-bottom:4px;align-items:flex-start}
+.ab{background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.22)}.aw{background:rgba(255,165,2,0.05);border:1px solid rgba(255,165,2,0.18)}
+
+/* ── MÉTÉO ── */
+.wx{background:rgba(0,45,100,0.1);border:1px solid rgba(0,100,160,0.13);border-radius:10px;padding:12px;margin-bottom:10px}
+.wxg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.wxc{background:rgba(255,255,255,0.03);border-radius:7px;padding:8px;text-align:center;border:1px solid var(--border)}
+.wxl{font-size:8px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.07em}
+.wxv{font-family:monospace;font-size:14px;font-weight:700;margin-bottom:1px}
+.wxs{font-size:8px;color:var(--dim)}
+
+/* ── RÉGLAGES MANUELS ── */
+.mm{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.mm-t{font-size:9px;color:var(--orange);letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;font-family:monospace}
+.duo{display:flex;gap:5px;align-items:center}
+.duo input{flex:1}.duo span{font-size:10px;color:var(--muted);font-family:monospace;white-space:nowrap}
+
+/* ── COMPAS MINI (44px) ── */
+.cmp-section{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.cmp-item{display:flex;flex-direction:column;gap:3px}
+.cmp-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-family:monospace}
+.cmp-row{display:flex;align-items:center;gap:6px}
+.cmp-row canvas{flex-shrink:0}
+.cmp-row input{flex:1;font-size:12px}
+.cmp-dl{font-size:9px;color:var(--dim);font-family:monospace;margin-top:1px}
+
+/* ── COMPUTE BAR ── */
+.cbar{border-radius:10px;padding:11px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;border:1px solid rgba(0,212,255,0.11);background:rgba(0,212,255,0.022)}
+.cbtn{padding:9px 26px;border-radius:8px;border:none;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;background:linear-gradient(135deg,#004d74,#00c4eb);color:#fff;box-shadow:0 3px 16px rgba(0,212,255,0.17)}
+.cbtn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,212,255,0.26)}
+.cbtn:disabled{background:rgba(255,71,87,0.17);color:rgba(255,71,87,0.5);cursor:not-allowed;box-shadow:none;transform:none}
+
+/* ── RÉSULTATS ── */
+.rg{display:grid;grid-template-columns:168px 1fr;gap:10px;margin-bottom:10px}
+.vbox{border-radius:11px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.tc{font-family:monospace;font-weight:700;font-size:54px;line-height:1}
+.ts{display:flex;gap:13px}.tp{text-align:center}.tn{font-size:16px;font-family:monospace;font-weight:700}.tl{font-size:8px;color:var(--muted);margin-top:1px}
+.dd{display:flex;gap:2px;margin-top:3px}.d{width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,0.07)}
+.cvw{background:rgba(0,0,0,0.28);border:1px solid rgba(0,212,255,0.08);border-radius:10px;padding:8px}
+.lb{display:flex;gap:3px;flex-wrap:wrap}
+.lbtn{padding:3px 8px;border-radius:5px;border:1px solid var(--border);cursor:pointer;background:rgba(255,255,255,0.03);color:var(--muted);font-size:9px;font-family:inherit;transition:all .15s}
+.lbtn.on{background:rgba(0,212,255,0.11);color:var(--cyan);border-color:rgba(0,212,255,0.24)}
+canvas{width:100%;border-radius:6px;display:block}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.fc{background:rgba(255,255,255,0.025);border-radius:7px;padding:6px 8px;border:1px solid var(--border)}
+.flab{font-size:8px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
+.fval{font-family:monospace;font-size:11px;font-weight:700}
+.eng-note{background:rgba(255,140,66,0.04);border:1px solid rgba(255,140,66,0.12);border-radius:7px;padding:8px 11px;font-size:9px;color:rgba(255,200,140,0.65);line-height:1.6;margin-top:7px}
+.rg2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ri{display:flex;align-items:flex-start;gap:6px;padding:6px 9px;border-radius:7px}
+.rb{font-size:8px;font-family:monospace;padding:2px 5px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.rt{font-size:11px;color:var(--muted);line-height:1.5}
+.aibox{background:rgba(0,212,255,0.015);border:1px solid rgba(0,212,255,0.09);border-radius:10px;padding:13px}
+.ait{font-size:13px;line-height:1.8;color:rgba(255,255,255,0.6);white-space:pre-wrap}
+.spin{display:inline-flex;gap:3px;margin-left:6px}.spin span{width:4px;height:4px;border-radius:50%;background:var(--cyan);animation:pulse 1s infinite}
+.spin span:nth-child(2){animation-delay:.2s}.spin span:nth-child(3){animation-delay:.4s}
+.ibox{background:rgba(0,212,255,0.045);border:1px solid rgba(0,212,255,0.1);border-radius:7px;padding:7px 10px;font-size:9px;color:rgba(0,212,255,0.65);font-family:monospace;line-height:1.5;margin-bottom:7px}
+
+/* ── MAP LEAFLET ── */
+#port-map{width:100%;height:320px;border-radius:10px;margin-bottom:10px;border:1px solid var(--border);overflow:hidden}
+.leaflet-container{background:#061828}
+
+/* ── SQUAT TOOL ── */
+.squat-box{background:var(--bg3);border:1px solid rgba(255,140,66,0.15);border-radius:10px;padding:12px;margin-bottom:10px}
+.squat-t{font-size:9px;color:var(--orange);letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;font-family:monospace}
+.squat-res{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.squat-card{background:rgba(255,140,66,0.06);border:1px solid rgba(255,140,66,0.12);border-radius:7px;padding:8px;text-align:center}
+.squat-val{font-family:monospace;font-size:16px;font-weight:700;color:var(--orange)}
+.squat-lbl{font-size:8px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.07em}
+
+/* ── TIDAL TOOL ── */
+.tidal-box{background:var(--bg3);border:1px solid rgba(0,212,255,0.12);border-radius:10px;padding:12px;margin-bottom:10px}
+.tidal-t{font-size:9px;color:var(--cyan);letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;font-family:monospace}
+
+/* ── EXPORT ── */
+.export-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid rgba(46,213,115,0.25);background:rgba(46,213,115,0.07);color:var(--green);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.export-btn:hover{background:rgba(46,213,115,0.12)}
+
+@media(max-width:680px){.g2,.rg{grid-template-columns:1fr}.pgrid{grid-template-columns:repeat(2,1fr)}.wxg{grid-template-columns:repeat(2,1fr)}.rg2{grid-template-columns:1fr}.cmp-section{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="logo">
+    <div class="logo-ico">⚓</div>
+    <div><div class="logo-t">HARBOUR PILOT</div><div class="logo-s">Aide à la décision · Ports français</div></div>
+  </div>
+  <div class="bar-r">
+    <span id="port-ind"></span>
+    <span class="clk" id="clk">--:--:--</span>
+    <span class="dot"></span>
+  </div>
+</div>
+
+<!-- ══ FORMULAIRE ══ -->
+<div class="main fade" id="form-sec">
+  <h1>Nouvelle manœuvre</h1>
+  <p class="sub">Renseignez les 3 onglets puis lancez le calcul</p>
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('vessel')">▬ Navire</button>
+    <button class="tab" onclick="showTab('port')">⚓ Port &amp; Quai</button>
+    <button class="tab" onclick="showTab('meteo')">◇ Météo &amp; Cap</button>
+  </div>
+
+  <!-- NAVIRE -->
+  <div class="panel on" id="panel-vessel">
+    <div class="g2">
+      <div class="card">
+        <div class="ct">◈ Identification IMO</div>
+        <div class="imo-box">
+          <input type="text" id="imo-input" placeholder="N° IMO (ex: 9302152)" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'')">
+          <button class="imo-btn" onclick="lookupIMO()">🔍 Rechercher</button>
+        </div>
+        <div class="imo-result" id="imo-result"></div>
+        <div style="margin-bottom:9px"><label class="lbl">Type de navire</label><div class="sg" id="vtype" style="grid-template-columns:repeat(3,1fr)"></div></div>
+        <div><label class="lbl">Manœuvre</label><div class="sg" id="mtype" style="grid-template-columns:repeat(4,1fr)"></div></div>
+      </div>
+      <div class="card">
+        <div class="ct">◎ Dimensions &amp; Propulsion</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px">
+          <div><label class="lbl">LOA (m)</label><input type="number" id="f-loa" value="250" min="50" max="500" oninput="onDim()"></div>
+          <div><label class="lbl">Largeur (m)</label><input type="number" id="f-beam" value="35" min="10" max="80" oninput="onDim()"></div>
+          <div><label class="lbl">Tirant (m)</label><input type="number" id="f-draft" value="11" min="2" max="25" step="0.1" oninput="onDim()"></div>
+          <div><label class="lbl">DWT (t)</label><input type="number" id="f-dwt" value="60000" min="500" max="500000" step="500"></div>
+        </div>
+        <hr class="div">
+        <div class="ct" style="color:var(--orange)">⚡ Propulsion</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label class="lbl">Puissance principale (kW)</label>
+            <input type="number" id="f-engine" value="20000" min="1000" max="120000" step="1000" oninput="updEng()">
+            <div id="eng-hp" style="font-size:9px;color:var(--muted);margin-top:2px;font-family:monospace"></div>
+          </div>
+          <div>
+            <label class="lbl">Hauteur totale HE (m) <span id="htot-src" style="font-size:9px;color:var(--orange)">estimée</span></label>
+            <input type="number" id="f-htot" value="30" min="5" max="100" step="0.5" oninput="markManual('htot-src')">
+          </div>
+          <div>
+            <label class="lbl">Prop. étrave (kW) <span id="etrave-src" style="font-size:9px;color:var(--orange)">estimée</span></label>
+            <input type="number" id="f-etrave" value="0" min="0" max="10000" step="100" oninput="markManual('etrave-src')">
+          </div>
+          <div>
+            <label class="lbl">Prop. poupe (kW) <span id="poupe-src" style="font-size:9px;color:var(--muted)">estimée</span></label>
+            <input type="number" id="f-poupe" value="0" min="0" max="6000" step="100" oninput="markManual('poupe-src')">
+          </div>
+        </div>
+        <label class="lbl">Type d'hélice principale</label>
+        <div class="sg" id="prop-grid" style="grid-template-columns:1fr 1fr;margin-bottom:8px"></div>
+        <div id="ca1" style="margin-top:7px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORT -->
+  <div class="panel" id="panel-port">
+    <div class="g2">
+      <div class="card">
+        <div class="ct">⚓ Port &amp; Quai</div>
+        <div id="port-sel"></div>
+        <div id="port-geo"></div>
+        <div id="berth-list"></div>
+        <div id="berth-info"></div>
+        <div id="ca2" style="margin-bottom:8px"></div>
+        <hr class="div">
+        <label class="lbl">Condition portuaire</label>
+        <div class="sg" id="pcond" style="grid-template-columns:1fr 1fr"></div>
+      </div>
+      <div class="card">
+        <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+          <span>🗺 Carte nautique — OpenSeaMap</span>
+          <div style="display:flex;gap:5px;align-items:center">
+            <button onclick="toggleSeamarks()" id="btn-sea" style="padding:2px 8px;border-radius:4px;border:1px solid rgba(0,212,255,0.25);background:rgba(0,212,255,0.1);color:var(--cyan);font-size:9px;cursor:pointer;font-family:inherit">⚓ Séamarks ON</button>
+            <a id="map-ext-link" href="#" target="_blank" style="font-size:9px;color:var(--muted);text-decoration:none">↗ Plein écran</a>
+          </div>
+        </div>
+        <div id="port-map" style="width:100%;height:340px;border-radius:9px;overflow:hidden;border:1px solid var(--border)"></div>
+        <div style="font-size:9px;color:var(--dim);text-align:center;margin-top:3px">© OpenStreetMap · © OpenSeaMap · symboles IALA</div>
+      </div>
+    </div>
+
+    <!-- Squat + Marées : utiles AVANT le calcul, dans l'onglet Port -->
+    <div class="g2" style="margin-top:2px">
+      <div class="squat-box">
+        <div class="squat-t">📐 Squat — Barras (transit en chenal)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label class="lbl">Vitesse (kt)</label><input type="number" id="sq-spd" value="6" min="1" max="16" step="0.5" oninput="calcSquat()"></div>
+          <div><label class="lbl">Profondeur (m)</label><input type="number" id="sq-depth" value="14" min="4" max="30" step="0.5" oninput="calcSquat()"></div>
+          <div><label class="lbl">Largeur chenal (m)</label><input type="number" id="sq-cw" value="120" min="30" max="500" step="10" oninput="calcSquat()"></div>
+          <div><label class="lbl">Cb (0.5–0.85)</label><input type="number" id="sq-cb" value="0.72" min="0.5" max="0.85" step="0.01" oninput="calcSquat()"></div>
+        </div>
+        <div class="squat-res" id="squat-res"></div>
+        <div id="squat-alert" style="margin-top:8px"></div>
+      </div>
+      <div class="tidal-box">
+        <div class="tidal-t">🌊 Fenêtre de marée — Douzièmes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label class="lbl">Port</label><select id="td-port" onchange="calcTidal()"></select></div>
+          <div><label class="lbl">Coefficient</label><input type="number" id="td-coef" value="70" min="20" max="120" oninput="calcTidal()"></div>
+          <div><label class="lbl">Heure BM</label><input type="text" id="td-bm" value="06:00" placeholder="HH:MM" oninput="calcTidal()"></div>
+          <div><label class="lbl">Tirant requis (m)</label><input type="number" id="td-draft" value="11" min="2" max="25" step="0.1" oninput="calcTidal()"></div>
+        </div>
+        <canvas id="tidal-canvas" width="700" height="160" style="width:100%;border-radius:7px;background:rgba(0,0,0,0.2);margin-bottom:6px"></canvas>
+        <div id="tidal-info" style="font-size:10px;color:var(--muted);font-family:monospace"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÉTÉO -->
+  <div class="panel" id="panel-meteo">
+    <div class="wx">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+        <div class="ct" style="margin:0">◉ Météo temps réel<span id="wx-pname" style="color:var(--muted)"></span></div>
+        <div style="display:flex;gap:6px">
+          <button onclick="loadWxMF()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,212,255,0.18);background:rgba(0,212,255,0.07);color:var(--cyan);font-size:10px;cursor:pointer;font-family:inherit">↻ Météo-France</button>
+          <button onclick="loadWxOM()" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(52,211,153,0.18);background:rgba(52,211,153,0.07);color:var(--teal);font-size:10px;cursor:pointer;font-family:inherit">↻ Open-Meteo</button>
+        </div>
+      </div>
+      <div id="wx-body"><div style="font-size:11px;color:var(--muted);font-style:italic">Chargement…</div></div>
+    </div>
+    <div class="mm">
+      <div class="mm-t">⊕ Réglages manuels</div>
+      <div class="g2" style="margin-bottom:8px">
+        <div>
+          <label class="lbl">Vent</label>
+          <div class="duo" style="margin-bottom:4px">
+            <input type="number" id="wkt" value="18" min="0" max="70" step="0.5" oninput="wktCh()">
+            <span>kt</span>
+            <input type="number" id="wms" value="9.3" min="0" max="36" step="0.1" oninput="wmsCh()">
+            <span>m/s</span>
+          </div>
+          <input type="range" id="wsl" min="0" max="70" step="0.5" value="18" oninput="wslCh()">
+          <div id="w-bft" style="font-size:9px;color:var(--muted);font-family:monospace;margin-top:3px"></div>
+        </div>
+        <div>
+          <label class="lbl">Courant</label>
+          <div class="duo" style="margin-bottom:4px">
+            <input type="number" id="ckt" value="1.0" min="0" max="8" step="0.1" oninput="cktCh()">
+            <span>kt</span>
+            <input type="number" id="cms" value="0.51" min="0" max="4.1" step="0.05" oninput="cmsCh()">
+            <span>m/s</span>
+          </div>
+          <input type="range" id="csl" min="0" max="8" step="0.1" value="1.0" oninput="cslCh()">
+        </div>
+      </div>
+      <div class="cmp-section">
+        <div class="cmp-item">
+          <div class="cmp-lbl" style="color:#a78bfa">Direction Vent (°)</div>
+          <div class="cmp-row">
+            <canvas id="cmp-w" width="44" height="44"></canvas>
+            <div style="flex:1"><input type="number" id="wdir" value="315" min="0" max="359" style="color:#a78bfa;border-color:rgba(167,139,250,0.25)" oninput="dirCh()"><div id="wdir-l" class="cmp-dl"></div></div>
+          </div>
+        </div>
+        <div class="cmp-item">
+          <div class="cmp-lbl" style="color:#34d399">Direction Courant (°)</div>
+          <div class="cmp-row">
+            <canvas id="cmp-c" width="44" height="44"></canvas>
+            <div style="flex:1"><input type="number" id="cdir" value="90" min="0" max="359" style="color:#34d399;border-color:rgba(52,211,153,0.25)" oninput="dirCh()"><div id="cdir-l" class="cmp-dl"></div></div>
+          </div>
+        </div>
+        <div class="cmp-item">
+          <div class="cmp-lbl" style="color:var(--cyan)">Cap accostage (°)</div>
+          <div class="cmp-row">
+            <canvas id="cmp-h" width="44" height="44"></canvas>
+            <div style="flex:1"><input type="number" id="hdg" value="315" min="0" max="359" style="color:var(--cyan);border-color:rgba(0,212,255,0.25)" oninput="dirCh()"><div id="hdg-l" class="cmp-dl"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="ct">⊢ Angles traversiers</div>
+        <div id="angles"></div>
+        <hr class="div">
+        <div class="ct" style="color:var(--teal)">◉ Synthèse</div>
+        <div id="met-sum"></div>
+      </div>
+    </div>
+    <div class="cbar" id="cbar">
+      <div id="cbar-sum" style="font-size:10px;color:var(--muted);font-family:monospace"></div>
+      <button class="cbtn" id="cbtn" onclick="doCompute()">⚡ Calculer la manœuvre</button>
+    </div>
+  </div>
+
+  <!-- OUTILS supprimé comme onglet — contenu intégré dans Port & Résultats -->
+  <div class="panel" id="panel-tools" style="display:none!important"></div>
+</div>
+
+<!-- ══ RÉSULTATS ══ -->
+<div class="main fade" id="res-sec" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div>
+
+      <h1>Rapport de manœuvre</h1>
+      <div id="res-sub" style="font-size:10px;color:var(--muted);font-family:monospace"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="export-btn" id="export-btn" onclick="exportPDF()">📄 Exporter PDF</button>
+      <button onclick="showForm()" style="padding:6px 13px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;font-family:inherit">← Modifier</button>
+    </div>
+  </div>
+  <div class="rg">
+    <div class="vbox" id="vbox">
+      <div style="font-size:8px;color:var(--muted);letter-spacing:.18em;font-family:monospace">REMORQUEURS</div>
+      <div class="tc" id="tug-n">0</div>
+      <div class="ts">
+        <div class="tp"><div class="tn" id="tug-f" style="color:var(--cyan)">0</div><div class="tl">AVANT</div></div>
+        <div class="tp"><div class="tn" id="tug-a" style="color:var(--orange)">0</div><div class="tl">ARRIÈRE</div></div>
+      </div>
+      <div class="dd" id="dif-d"></div>
+      <div id="dif-s" style="font-size:11px;font-family:monospace;font-weight:700"></div>
+      <div id="prop-box" style="display:none;width:100%;margin-top:5px;background:rgba(255,140,66,0.06);border-radius:7px;padding:6px 8px;border:1px solid rgba(255,140,66,0.12)">
+        <div style="font-size:8px;color:rgba(255,140,66,.6);font-family:monospace;margin-bottom:2px">PROPULSION PROPRE</div>
+        <div id="prop-val" style="font-size:10px;font-family:monospace;color:var(--orange)"></div>
+      </div>
+      <div id="bp-res" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.025);border-radius:7px;padding:6px 8px;border:1px solid var(--border)">
+        <div style="font-size:8px;color:var(--dim);font-family:monospace;margin-bottom:2px">BP / TUG</div>
+        <div id="bp-res-v" style="font-size:10px;font-family:monospace"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <div class="cvw">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px">
+          <span style="font-size:8px;color:var(--cyan);letter-spacing:.18em;text-transform:uppercase;font-family:monospace">⬡ Carte de manœuvre — OpenSeaMap</span>
+          <div style="display:flex;gap:5px;align-items:center">
+            <button id="mnv-sea-btn" onclick="toggleMnvSeamarks()" style="padding:2px 7px;border-radius:4px;border:1px solid rgba(0,212,255,0.25);background:rgba(0,212,255,0.1);color:var(--cyan);font-size:9px;cursor:pointer;font-family:inherit">⚓ Séamarks</button>
+          </div>
+        </div>
+        <div id="mc" style="width:100%;height:380px;min-height:380px;border:1px solid var(--border);background:#0a1628;border-radius:8px;"></div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:5px;font-size:8px;color:var(--dim);flex-wrap:wrap">
+          <span style="color:#a78bfa">→ Vent</span><span style="color:#34d399">→ Courant</span>
+          <span style="color:rgba(255,71,87,.7)">→ Dérive</span>
+          <span style="color:var(--cyan)">⬡ Quai cible</span>
+          <span style="color:rgba(0,212,255,.4)">╌ Trajectoire</span>
+        </div>
+      </div>
+      <div class="card"><div class="ct">Verdict détaillé — 3 couches</div><div id="verdict3"></div></div>
+      <div class="card"><div class="ct">Bilan des forces — Modèle B (repère navire)</div><div class="fg" id="forces"></div><div class="eng-note" id="eng-note"></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:10px"><div class="ct">Points de vigilance</div><div class="rg2" id="risks"></div></div>
+  <div class="card" style="margin-bottom:10px">
+    <div class="ct">🚢 Remorqueurs disponibles — <span id="tug-port-lbl" style="color:var(--cyan)"></span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <label class="lbl" style="margin:0;white-space:nowrap">Port :</label>
+      <select id="tug-port-sel" onchange="buildTugDB()" style="flex:1;max-width:240px"></select>
+    </div>
+    <div id="tug-db"></div>
+  </div>
+  <div class="aibox">
+    <div style="display:flex;align-items:center;margin-bottom:9px">
+      <div class="ct" style="margin:0">◈ Rapport IA — Pilote Expert</div>
+      <div class="spin" id="ai-spin"><span></span><span></span><span></span></div>
+    </div>
+    <div class="ait" id="ai-txt">Génération…</div>
+  </div>
+</div>
+<script>
+// ══════════════════════════════════════════════════
+// HARBOUR PILOT — données et logique métier
+// ══════════════════════════════════════════════════
+
+const VTYPES=[
+  // wf/cf = coefficients aérodynamique/hydrodynamique latéraux (Cx)
+  // H_mult = hauteur totale estimée = draft × H_mult (si H_total non saisi)
+  // kw_etrave_pct = % de la puissance principale pour étrave (estimation)
+  // xv_pct = position centre vélique depuis milieu, en % LOA (+ = avant, - = arrière)
+  {id:"container",  l:"Porte-cont.", ic:"▬", wf:1.20, cf:1.00, H_mult:2.6, kw_etrave_pct:0.04, xv_pct:-0.05, k_prop:0.008},
+  {id:"tanker",     l:"Pétrolier",   ic:"◼", wf:0.90, cf:1.10, H_mult:0.4, kw_etrave_pct:0.02, xv_pct:+0.03, k_prop:0.008},
+  {id:"bulkcarrier",l:"Vraquier",    ic:"▪", wf:0.95, cf:1.05, H_mult:0.5, kw_etrave_pct:0.02, xv_pct:-0.02, k_prop:0.007},
+  {id:"ropax",      l:"Roro/Ferry",  ic:"◧", wf:1.30, cf:0.90, H_mult:1.6, kw_etrave_pct:0.05, xv_pct:+0.05, k_prop:0.010},
+  {id:"lng",        l:"Méthanier",   ic:"◈", wf:1.10, cf:1.00, H_mult:0.7, kw_etrave_pct:0.04, xv_pct:0.00,  k_prop:0.009},
+  {id:"cruise",     l:"Paquebot",    ic:"◫", wf:1.50, cf:0.85, H_mult:2.2, kw_etrave_pct:0.06, xv_pct:-0.08, k_prop:0.012},
+];
+const MTYPES=[
+  {id:"entry",l:"Entrée",ic:"→"},
+  {id:"exit",l:"Sortie",ic:"←"},
+  {id:"shift",l:"Déhalage",ic:"⇄"},
+  {id:"dock",l:"Accostage direct",ic:"⊢"}
+];
+const PCONDS=[
+  {id:"open",l:"Rade ouverte",ic:"〰",f:1.3,d:"Fetch libre ×1.3"},
+  {id:"channel",l:"Chenal étroit",ic:"⊟",f:1.4,d:"Vent canalisé ×1.4"},
+  {id:"basin",l:"Bassin fermé",ic:"□",f:0.9,d:"Eaux calmes ×0.9"},
+  {id:"lock",l:"Écluse/Passe",ic:"⊠",f:1.5,d:"Ultra-confiné ×1.5"},
+];
+const PROPS=[
+  {id:"fixed",l:"Hélice fixe",m:0.70},
+  {id:"cpe",l:"Pas variable",m:0.85},
+  {id:"twin",l:"Double hélice",m:0.95},
+  {id:"azipod",l:"Double azipod",m:1.00}
+];
+const BFT=[[0,"Calme"],[1,"Très lgr brise"],[3,"Lgr brise"],[7,"Petite brise"],[11,"Jolie brise"],[17,"Bonne brise"],[22,"Vent frais"],[28,"Grand frais"],[34,"Coup de vent"],[41,"Fort c. vent"],[48,"Tempête"],[56,"Viol. tempête"],[64,"Ouragan"]];
+
+// ─── BASE NAVIRES (IMO → données) ───
+// H_total = hauteur totale hors-eau (m) | kw_etrave/poupe = puissance propulseurs transversaux (kW)
+const VESSELS=[
+  {imo:"9302152",name:"CMA CGM MARCO POLO",type:"container",flag:"🇫🇷",loa:396,beam:54,draft:16.0,dwt:187000,kw:80080,thr:"0.18",prop:"cpe",
+   H_total:52,kw_etrave:2800,kw_poupe:0},
+  {imo:"9629955",name:"MSC OSCAR",type:"container",flag:"🇵🇦",loa:395,beam:59,draft:16.0,dwt:197000,kw:84240,thr:"0.18",prop:"cpe",
+   H_total:55,kw_etrave:3000,kw_poupe:0},
+  {imo:"9321483",name:"EVER GIVEN",type:"container",flag:"🇵🇦",loa:400,beam:59,draft:14.5,dwt:200000,kw:80080,thr:"0.18",prop:"cpe",
+   H_total:58,kw_etrave:2800,kw_poupe:0},
+  {imo:"9484507",name:"MAERSK ESSEX",type:"container",flag:"🇩🇰",loa:347,beam:46,draft:14.5,dwt:115000,kw:54840,thr:"0.18",prop:"cpe",
+   H_total:48,kw_etrave:2200,kw_poupe:0},
+  {imo:"9254880",name:"STENA IMPERO",type:"tanker",flag:"🇬🇧",loa:229,beam:42,draft:13.5,dwt:164000,kw:21770,thr:"0.10",prop:"fixed",
+   H_total:22,kw_etrave:700,kw_poupe:0},
+  {imo:"9468405",name:"EURONAV NINA",type:"tanker",flag:"🇧🇪",loa:333,beam:60,draft:22.5,dwt:441000,kw:36480,thr:"0.10",prop:"fixed",
+   H_total:30,kw_etrave:1200,kw_poupe:0},
+  {imo:"9387425",name:"BERGE BULK DENALI",type:"bulkcarrier",flag:"🇧🇸",loa:292,beam:45,draft:18.0,dwt:209000,kw:18660,thr:"0.10",prop:"fixed",
+   H_total:28,kw_etrave:800,kw_poupe:0},
+  {imo:"9359531",name:"ENERGY CHAMPION",type:"lng",flag:"🇧🇸",loa:289,beam:46,draft:12.0,dwt:97600,kw:28900,thr:"0.28",prop:"twin",
+   H_total:36,kw_etrave:2000,kw_poupe:1500},
+  {imo:"9478822",name:"METHANIA",type:"lng",flag:"🇫🇷",loa:285,beam:44,draft:11.4,dwt:93000,kw:27000,thr:"0.28",prop:"twin",
+   H_total:34,kw_etrave:1800,kw_poupe:1200},
+  {imo:"9614133",name:"MSC BELLISSIMA",type:"cruise",flag:"🇵🇦",loa:315,beam:43,draft:8.8,dwt:16800,kw:62400,thr:"0.40",prop:"azipod",
+   H_total:65,kw_etrave:4000,kw_poupe:4000},
+  {imo:"9781865",name:"SYMPHONY OF THE SEAS",type:"cruise",flag:"🇧🇸",loa:361,beam:66,draft:9.3,dwt:18000,kw:75000,thr:"0.40",prop:"azipod",
+   H_total:72,kw_etrave:5500,kw_poupe:5500},
+  {imo:"9434204",name:"CORSICA LINEA PRIME",type:"ropax",flag:"🇫🇷",loa:211,beam:28,draft:7.2,dwt:6800,kw:20400,thr:"0.18",prop:"twin",
+   H_total:32,kw_etrave:1500,kw_poupe:0},
+  {imo:"9776350",name:"GNV RHAPSODY",type:"ropax",flag:"🇮🇹",loa:218,beam:30,draft:6.8,dwt:7400,kw:22000,thr:"0.18",prop:"twin",
+   H_total:34,kw_etrave:1600,kw_poupe:0},
+  {imo:"9398205",name:"COTENTIN",type:"ropax",flag:"🇫🇷",loa:186,beam:26,draft:6.4,dwt:5800,kw:15900,thr:"0.18",prop:"twin",
+   H_total:28,kw_etrave:1200,kw_poupe:0},
+];
+
+// ─── BASE REMORQUEURS RÉELS par port ───
+const TUGS_DB = {
+  marseille:[
+    {name:"VB EMERAUDE",company:"Les Abeilles (Bourbon)",bp:60,hp:4400,type:"ASD",year:2008},
+    {name:"VB LUBERON",company:"Les Abeilles (Bourbon)",bp:65,hp:4800,type:"ASD",year:2012},
+    {name:"VB VENTOUX",company:"Les Abeilles (Bourbon)",bp:70,hp:5200,type:"Voith",year:2015},
+    {name:"CENTAURE",company:"Boluda France",bp:58,hp:4200,type:"ASD",year:2006},
+    {name:"ROBUSTE",company:"Boluda France",bp:62,hp:4600,type:"ASD",year:2010},
+    {name:"MISTRAL",company:"URS (Union des Remorqueurs)",bp:45,hp:3300,type:"Conventionnel",year:1998},
+  ],
+  lehavre:[
+    {name:"VB ANTARES",company:"Les Abeilles (Bourbon)",bp:80,hp:6000,type:"ASD",year:2018},
+    {name:"VB ORION",company:"Les Abeilles (Bourbon)",bp:75,hp:5500,type:"ASD",year:2014},
+    {name:"FORT",company:"Boluda France",bp:70,hp:5200,type:"Voith",year:2011},
+    {name:"ROBUSTE II",company:"Boluda France",bp:65,hp:4800,type:"ASD",year:2009},
+    {name:"ABEILLE LIBERTÉ",company:"Les Abeilles (SMIT)",bp:160,hp:12800,type:"AHTS",year:2004,note:"Sauvetage hauturier"},
+    {name:"ABEILLE BOURBON",company:"Les Abeilles (SMIT)",bp:152,hp:12000,type:"AHTS",year:2000,note:"Sauvetage hauturier"},
+  ],
+  dunkerque:[
+    {name:"VB POLARIS",company:"Les Abeilles (Bourbon)",bp:75,hp:5500,type:"ASD",year:2016},
+    {name:"VB SIRIUS",company:"Les Abeilles (Bourbon)",bp:70,hp:5200,type:"ASD",year:2013},
+    {name:"BRAVO",company:"Boluda France",bp:68,hp:5000,type:"ASD",year:2010},
+    {name:"COURAGEUX",company:"Saam Smit Towage",bp:72,hp:5300,type:"Voith",year:2012},
+    {name:"INTRÉPIDE",company:"Saam Smit Towage",bp:68,hp:5000,type:"ASD",year:2009},
+  ],
+  sete:[
+    {name:"ROQUETTE",company:"Boluda France",bp:40,hp:2900,type:"Conventionnel",year:2001},
+    {name:"THAU",company:"Boluda France",bp:38,hp:2800,type:"Conventionnel",year:1999},
+    {name:"HÉRAULT",company:"Boluda France",bp:45,hp:3300,type:"ASD",year:2007},
+  ],
+  brest:[
+    {name:"VB BRETAGNE",company:"Les Abeilles (Bourbon)",bp:55,hp:4100,type:"ASD",year:2005},
+    {name:"VB FINISTÈRE",company:"Les Abeilles (Bourbon)",bp:50,hp:3700,type:"Conventionnel",year:2002},
+    {name:"KERMORVAN",company:"Boluda France",bp:48,hp:3500,type:"ASD",year:2003},
+  ],
+  rouen:[
+    {name:"VB SEINE",company:"Les Abeilles (Bourbon)",bp:52,hp:3800,type:"ASD",year:2006},
+    {name:"VB NORMANDIE",company:"Les Abeilles (Bourbon)",bp:48,hp:3500,type:"Conventionnel",year:2003},
+    {name:"VIKING",company:"URS",bp:42,hp:3100,type:"Conventionnel",year:1997},
+  ],
+  nantes_saint_nazaire:[
+    {name:"VB LOIRE",company:"Les Abeilles (Bourbon)",bp:65,hp:4800,type:"ASD",year:2010},
+    {name:"VB ATLANTIQUE",company:"Les Abeilles (Bourbon)",bp:70,hp:5200,type:"Voith",year:2013},
+    {name:"TITAN",company:"Boluda France",bp:60,hp:4400,type:"ASD",year:2008},
+    {name:"COLOSSUS",company:"Saam Smit Towage",bp:75,hp:5500,type:"ASD",year:2015,note:"Assist STX paquebots"},
+  ],
+  bordeaux:[
+    {name:"VB GARONNE",company:"Les Abeilles (Bourbon)",bp:50,hp:3700,type:"ASD",year:2004},
+    {name:"VB GIRONDE",company:"Les Abeilles (Bourbon)",bp:48,hp:3500,type:"Conventionnel",year:2001},
+    {name:"MÉDOC",company:"Boluda France",bp:42,hp:3100,type:"Conventionnel",year:1996},
+  ],
+};
+
+// ─── PORTS ───
+// canvasLayout: coordonnées normalisées (0-1) sur canvas 580×300
+// px/py des berths = position du quai sur ce canvas
+// Échelle cohérente : on représente la zone de manœuvre principale (rayon ~2-3km)
+const PORTS=[
+ {id:"marseille",name:"Marseille-Fos",region:"Méditerranée",lat:43.35,lng:4.90,mapZoom:12,
+  cAxis:315,dWind:{dir:315,spd:22,name:"Mistral"},tidal:{spd:0.3,axis:300},shelter:[90,200],boost:1.35,
+  note:"Mistral canalisé rhodanien. Rafales >50kt. Micro-tidal méditerranéen.",
+  maxDepth:22,tyDepth:14,
+  entryPt:[0.06,0.52],
+  tugRules:[
+    {cond:"loa>=300",          min:2, src:"Règlement PAM Art.15"},
+    {cond:"loa>=350",          min:3, src:"Règlement PAM Art.15"},
+    {cond:"type==='lng'",      min:2, src:"ISGOTT 5e éd. §27"},
+    {cond:"windKt>30",         min:1, src:"Circulaire PAM — Mistral >30kt"},
+  ],
+  canvasLayout:{
+    // Fos-sur-Mer et port de Marseille — zone ~8km×5km
+    // N en haut, Méditerranée en bas/droite
+    water:"#06182a",
+    land:[
+      // Péninsule Fos au NW (haut gauche)
+      {pts:[[0,0],[0.40,0],[0.40,0.16],[0.26,0.24],[0,0.24]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+      // Côte NE (haut droite)
+      {pts:[[0.62,0],[1,0],[1,0.20],[0.62,0.20]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+      // Digue E et terminaux Marseille (droite)
+      {pts:[[0.78,0.32],[1,0.32],[1,1],[0.78,1]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+      // Pointe Bonnieu SW (bas gauche)
+      {pts:[[0,0.72],[0.13,0.72],[0.13,1],[0,1]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+    ],
+    quayWalls:[
+      // Quai Nord Fos
+      {x1:0.04,y1:0.24,x2:0.36,y2:0.24,w:4,c:"#4a7090"},
+      // Quai Distriport
+      {x1:0.60,y1:0.20,x2:0.78,y2:0.20,w:4,c:"#4a7090"},
+      // Front de mer Marseille (vertical droite)
+      {x1:0.78,y1:0.34,x2:0.78,y2:0.68,w:4,c:"#4a7090"},
+      // Quai fond de bassin
+      {x1:0.13,y1:0.68,x2:0.78,y2:0.68,w:3,c:"#3a6080"},
+    ],
+    channels:[
+      // Chenal d'entrée Fos (horizontal)
+      {pts:[[0.40,0.08],[0.62,0.08]],axis:true},
+      // Chenal interne N-S
+      {pts:[[0.17,0.24],[0.17,0.65]],axis:true},
+    ],
+    depthZones:[
+      {x:0.22,y:0.14,r:0.14,depth:17,label:"Fos -17m"},
+      {x:0.66,y:0.12,r:0.10,depth:16,label:"Distriport -16m"},
+      {x:0.30,y:0.46,r:0.14,depth:22,label:"STS -22m"},
+      {x:0.48,y:0.42,r:0.10,depth:14,label:"LNG -14m"},
+      {x:0.45,y:0.60,r:0.16,depth:12,label:"Joliette -12m"},
+    ],
+    currentDir:300,
+  },
+  berths:[
+    {id:"fos_cont",name:"Fos — Eurofos Darse 2 (Conteneurs)",type:"container",loa:400,beam:60,draft:16.5,hdg:0,cond:"basin",note:"Mistral NW direct. Escort >300m.",px:0.18,py:0.24,d:17,lat:43.4135,lng:4.8155},
+    {id:"fos_dis",name:"Fos — Distriport Fos 2XL",type:"container",loa:360,beam:55,draft:16.0,hdg:0,cond:"channel",note:"Vent amplifié chenaux industriels.",px:0.66,py:0.20,d:16,lat:43.4195,lng:4.9015},
+    {id:"fos_oil",name:"Fos — Lavéra Pétrolier STS",type:"tanker",loa:350,beam:60,draft:22.0,hdg:90,cond:"open",note:"Rade ouverte. Courant ligure 0.3–0.5kt.",px:0.30,py:0.46,d:22,lat:43.3960,lng:5.0224},
+    {id:"fos_lng",name:"Fos — Cavaou Méthanier LNG",type:"lng",loa:310,beam:50,draft:13.0,hdg:90,cond:"basin",note:"ISGOTT 500m. Mistral >30kt interdit.",px:0.48,py:0.42,d:14,lat:43.4255,lng:4.8972},
+    {id:"fos_roro",name:"Fos — Terminal Roro Darse 3",type:"ropax",loa:250,beam:38,draft:9.5,hdg:0,cond:"basin",note:"Roro industriel Eurofos.",px:0.38,py:0.30,d:10,lat:43.4095,lng:4.8340},
+    {id:"mourepiane",name:"Marseille — Mourepiane (Ferry)",type:"ropax",loa:250,beam:35,draft:9.0,hdg:270,cond:"basin",note:"Fort trafic Corse/Afrique du Nord.",px:0.78,py:0.42,d:10,lat:43.3615,lng:5.3490},
+    {id:"joliette",name:"Marseille — Joliette (Croisières)",type:"cruise",loa:380,beam:55,draft:10.0,hdg:270,cond:"basin",note:"1er port croisière France.",px:0.78,py:0.56,d:10,lat:43.3478,lng:5.3468},
+    {id:"arenc",name:"Marseille — Arenc (Vraquier)",type:"bulkcarrier",loa:270,beam:42,draft:13.0,hdg:270,cond:"basin",note:"Terminaux céréaliers.",px:0.78,py:0.66,d:14,lat:43.3535,lng:5.3512},
+  ]},
+ {id:"sete",name:"Sète",region:"Méditerranée",lat:43.406,lng:3.694,mapZoom:13,
+  cAxis:0,dWind:{dir:300,spd:18,name:"Tramontane"},tidal:{spd:0.2,axis:0},shelter:[100,220],boost:1.25,
+  note:"Tramontane forte. Chenal -14.5m. Étang de Thau côté Ouest.",
+  maxDepth:14,tyDepth:10,
+  tugRules:[
+    {cond:"loa>=200",          min:1, src:"Règlement Port de Sète Art.8"},
+    {cond:"type==='tanker'",   min:1, src:"Règlement Port de Sète — hydrocarbures"},
+    {cond:"windKt>25",         min:1, src:"Procédure interne pilotage Sète"},
+  ],
+  entryPt:[0.50,0.90],
+  canvasLayout:{
+    // Vue du port de Sète — île singulière entre mer et Thau
+    // Mer au S (bas), Étang de Thau au N (haut, hors champ)
+    water:"#06182a",
+    land:[
+      // Pointe N-W (entrée ville)
+      {pts:[[0,0],[0.17,0],[0.17,0.30],[0,0.30]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+      // Pointe N-E
+      {pts:[[0,0.72],[0.17,0.72],[0.17,1],[0,1]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+      // Jetée E et môle
+      {pts:[[0.80,0],[1,0],[1,1],[0.80,1]],color:"#1d2b19",stroke:"rgba(90,130,70,0.4)"},
+    ],
+    quayWalls:[
+      // Quai Nord (bassin du Midi)
+      {x1:0.19,y1:0.06,x2:0.78,y2:0.06,w:4,c:"#4a7090"},
+      // Quai Est (vertical)
+      {x1:0.78,y1:0.06,x2:0.78,y2:0.54,w:4,c:"#4a7090"},
+      // Quai Sud (bassin de Thau)
+      {x1:0.19,y1:0.54,x2:0.78,y2:0.54,w:4,c:"#4a7090"},
+      // Quai W interne
+      {x1:0.17,y1:0.30,x2:0.20,y2:0.72,w:3,c:"#3a6080"},
+    ],
+    channels:[
+      // Chenal d'entrée S (principale entrée mer)
+      {pts:[[0.50,0.92],[0.50,0.54]],axis:true},
+    ],
+    depthZones:[
+      {x:0.30,y:0.30,r:0.10,depth:13,label:"Crète -13m"},
+      {x:0.50,y:0.30,r:0.10,depth:12,label:"Général -12m"},
+      {x:0.66,y:0.30,r:0.08,depth:12,label:"Pétro -12m"},
+      {x:0.78,y:0.30,r:0.06,depth:11,label:"-11m"},
+      {x:0.30,y:0.72,r:0.10,depth:9,label:"Ferries -9m"},
+      {x:0.55,y:0.72,r:0.10,depth:10,label:"-10m"},
+      {x:0.50,y:0.88,r:0.06,depth:8,label:"Entrée -8m"},
+    ],
+    currentDir:0,
+  },
+  berths:[
+    {id:"sete_vrac1",name:"Quai Crète — Vraquiers",type:"bulkcarrier",loa:240,beam:38,draft:13.5,hdg:0,cond:"channel",note:"Tramontane traversière forte.",px:0.30,py:0.06,d:13,lat:43.4055,lng:3.6925},
+    {id:"sete_vrac2",name:"Quai Général — Céréales",type:"bulkcarrier",loa:200,beam:32,draft:12.0,hdg:0,cond:"channel",note:"Export céréales Languedoc.",px:0.48,py:0.06,d:12,lat:43.4048,lng:3.6985},
+    {id:"sete_petro1",name:"Terminal Pétrolier Nord",type:"tanker",loa:200,beam:32,draft:12.0,hdg:0,cond:"basin",note:"NW amplifié Thau.",px:0.65,py:0.06,d:12,lat:43.4040,lng:3.7065},
+    {id:"sete_petro2",name:"Terminal Hydrocarbures Est",type:"tanker",loa:180,beam:28,draft:10.5,hdg:270,cond:"basin",note:"Zone industrielle Est.",px:0.78,py:0.28,d:11,lat:43.4022,lng:3.7175},
+    {id:"sete_engrais",name:"Quai Midi — Engrais/Clinker",type:"bulkcarrier",loa:180,beam:28,draft:11.0,hdg:0,cond:"basin",note:"Import engrais, phosphates.",px:0.48,py:0.28,d:11,lat:43.4025,lng:3.7030},
+    {id:"sete_ferry",name:"Terminal Ferries Maroc/Algérie",type:"ropax",loa:220,beam:34,draft:8.5,hdg:180,cond:"basin",note:"GNV, La Méridionale.",px:0.50,py:0.54,d:9,lat:43.3982,lng:3.7012},
+    {id:"sete_cruise",name:"Môle Saint-Louis — Croisières",type:"cruise",loa:300,beam:45,draft:10.0,hdg:180,cond:"basin",note:"Tramontane dérive accostage.",px:0.28,py:0.54,d:10,lat:43.3975,lng:3.6942},
+    {id:"sete_cont",name:"Quai Alcyone — Conteneurs",type:"container",loa:200,beam:32,draft:11.5,hdg:180,cond:"basin",note:"Terminal polyvalent.",px:0.66,py:0.54,d:11,lat:43.3980,lng:3.7115},
+    {id:"sete_bois",name:"Quai Fraternité — Bois",type:"bulkcarrier",loa:170,beam:27,draft:9.5,hdg:0,cond:"basin",note:"Import bois exotiques.",px:0.62,py:0.28,d:10,lat:43.4028,lng:3.7098},
+    {id:"sete_peche",name:"Quai Maroc — Pêche/Divers",type:"bulkcarrier",loa:160,beam:26,draft:8.0,hdg:90,cond:"basin",note:"1er port pêche Méd. française.",px:0.20,py:0.40,d:8,lat:43.4010,lng:3.6928},
+  ]},
+ {id:"lehavre",name:"Le Havre",region:"Manche",lat:49.49,lng:0.12,mapZoom:12,
+  cAxis:100,dWind:{dir:225,spd:18,name:"Vent de SW"},tidal:{spd:2.8,axis:95},shelter:[0,50],boost:1.1,
+  note:"1er port France 106Mt. Marnage 8m. Courant flot 2.8kt.",
+  maxDepth:25,tyDepth:15,
+  tugRules:[
+    {cond:"loa>=300",          min:2, src:"Règlement HAROPA Le Havre Art.20"},
+    {cond:"loa>=350",          min:3, src:"Règlement HAROPA Le Havre Art.20"},
+    {cond:"type==='lng'",      min:2, src:"ISGOTT 5e éd. §27"},
+    {cond:"portCond==='open'", min:1, src:"Port d'Antifer — rade ouverte"},
+  ],
+  entryPt:[0.04,0.50],
+  canvasLayout:{
+    water:"#05141e",
+    land:[
+      // Côte N (haut)
+      {pts:[[0,0],[1,0],[1,0.28],[0.82,0.28],[0.65,0.22],[0.48,0.26],[0.12,0.24],[0,0.28]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},
+      // Côte S (bas)
+      {pts:[[0,0.72],[0.12,0.72],[0.38,0.76],[0.65,0.74],[1,0.72],[1,1],[0,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},
+      // Digue N (Port 2000)
+      {pts:[[0.02,0.28],[0.06,0.28],[0.06,0.36],[0.02,0.36]],color:"#2a3020",stroke:"rgba(80,100,60,0.3)"},
+    ],
+    quayWalls:[
+      // Front Port 2000 (vertical gauche)
+      {x1:0.04,y1:0.28,x2:0.04,y2:0.72,w:6,c:"#3a6585"},
+      // Quais céréales/RoRo (milieu haut)
+      {x1:0.30,y1:0.28,x2:0.60,y2:0.30,w:4,c:"#4a7090"},
+      // Terminal conteneurs classique
+      {x1:0.60,y1:0.28,x2:0.65,y2:0.60,w:4,c:"#4a7090"},
+    ],
+    channels:[
+      // Chenal d'accès principal E-W
+      {pts:[[0.04,0.50],[0.90,0.50]],axis:true},
+    ],
+    depthZones:[
+      {x:0.04,y:0.50,r:0.18,depth:17,label:"Port 2000 -17m"},
+      {x:0.10,y:0.50,r:0.10,depth:25,label:"Antifer -25m"},
+      {x:0.45,y:0.50,r:0.18,depth:15,label:"Bassins -15m"},
+      {x:0.62,y:0.44,r:0.09,depth:11,label:"Eure -11m"},
+    ],
+    currentDir:95,
+  },
+  berths:[
+    {id:"tdf_a",name:"Port 2000 — MSC/CMA CGM",type:"container",loa:400,beam:63,draft:16.5,hdg:90,cond:"open",note:"Très exposé SW. Courant flot 2.5kt.",px:0.04,py:0.50,d:17,lat:49.4745,lng:0.0685},
+    {id:"antifer",name:"Port d'Antifer (VLCC)",type:"tanker",loa:450,beam:68,draft:25.0,hdg:90,cond:"open",note:"VLCC — rade exposée NW. Hs<2m obligatoire.",px:0.10,py:0.50,d:25,lat:49.6385,lng:0.1645},
+    {id:"roro_havre",name:"Bassin Vauban (Brittany Ferries)",type:"ropax",loa:240,beam:35,draft:8.5,hdg:90,cond:"basin",note:"Fort courant à l'entrée des écluses.",px:0.44,py:0.28,d:9,lat:49.4920,lng:0.1045},
+    {id:"cruise_h",name:"Bassin de l'Eure (Croisières)",type:"cruise",loa:360,beam:55,draft:10.5,hdg:90,cond:"basin",note:"Courant max 2kt dans chenal.",px:0.62,py:0.44,d:11,lat:49.4862,lng:0.1042},
+    {id:"grdbras",name:"Grand Bras (Vraquier/Céréales)",type:"bulkcarrier",loa:300,beam:48,draft:15.0,hdg:90,cond:"basin",note:"1er exportateur céréales France.",px:0.52,py:0.28,d:15,lat:49.4875,lng:0.1068},
+  ]},
+ {id:"dunkerque",name:"Dunkerque",region:"Mer du Nord",lat:51.05,lng:2.36,mapZoom:12,
+  cAxis:60,dWind:{dir:240,spd:20,name:"Vent WSW"},tidal:{spd:2.2,axis:65},shelter:[],boost:1.15,
+  note:"3e port France. Fetch illimité SW. Escort tugs >250m. Courant 2.2kt.",
+  maxDepth:20,tyDepth:14,
+  tugRules:[
+    {cond:"loa>=250",min:2,src:"Règlement GPMD Art.18 — escort obligatoire"},
+    {cond:"loa>=300",min:3,src:"Règlement GPMD Art.18 — grands navires"},
+    {cond:"type==='lng'",min:2,src:"ISGOTT 5e éd. §27"},
+    {cond:"portCond==='lock'",min:2,src:"Procédure écluse Trystram/CDG"},
+  ],
+  entryPt:[0.50,0.06],
+  canvasLayout:{
+    water:"#05141e",
+    land:[
+      {pts:[[0,0],[1,0],[1,0.28],[0,0.28]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},
+      {pts:[[0,0.72],[1,0.72],[1,1],[0,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},
+    ],
+    quayWalls:[
+      {x1:0.10,y1:0.28,x2:0.42,y2:0.30,w:4,c:"#4a7090"},
+      {x1:0.42,y1:0.30,x2:0.44,y2:0.70,w:4,c:"#4a7090"},
+      {x1:0.56,y1:0.28,x2:0.82,y2:0.30,w:4,c:"#4a7090"},
+    ],
+    channels:[{pts:[[0.50,0.06],[0.50,0.72]],axis:true}],
+    depthZones:[
+      {x:0.25,y:0.50,r:0.14,depth:17,label:"BDT -17m"},
+      {x:0.50,y:0.50,r:0.12,depth:20,label:"Minéralier -20m"},
+      {x:0.70,y:0.50,r:0.12,depth:17,label:"Pétrole -17m"},
+    ],
+    currentDir:65,
+  },
+  berths:[
+    {id:"bdt",name:"Terminal Conteneurs BDT",type:"container",loa:400,beam:60,draft:17.0,hdg:0,cond:"lock",note:"Écluse Trystram. Attente 2–3h.",px:0.25,py:0.50,d:17,lat:51.0478,lng:2.3418},
+    {id:"minerais",name:"Terminal Minéralier ArcelorMittal",type:"bulkcarrier",loa:350,beam:55,draft:20.0,hdg:0,cond:"channel",note:"Escort tugs >250m obligatoire.",px:0.50,py:0.50,d:20,lat:51.0538,lng:2.3642},
+    {id:"dktm",name:"Terminal Pétrolier DKTM",type:"tanker",loa:300,beam:48,draft:17.0,hdg:0,cond:"lock",note:"Écluse Charles de Gaulle.",px:0.70,py:0.50,d:17,lat:51.0562,lng:2.3890},
+    {id:"dkk_lng",name:"Terminal LNG Dunkerque",type:"lng",loa:310,beam:50,draft:13.0,hdg:90,cond:"channel",note:"ISGOTT 500m. Min 2 tugs.",px:0.35,py:0.68,d:14,lat:51.0352,lng:2.3485},
+    {id:"dkk_roro",name:"Terminal Passagers DFDS/P&O",type:"ropax",loa:240,beam:35,draft:7.5,hdg:90,cond:"basin",note:"1.7M passagers/an.",px:0.65,py:0.68,d:8,lat:51.0372,lng:2.3765},
+  ]},
+ {id:"rouen",name:"Rouen (HAROPA)",region:"Seine",lat:49.44,lng:1.10,mapZoom:13,
+  cAxis:100,dWind:{dir:225,spd:15,name:"Vent de SW"},tidal:{spd:1.8,axis:100},shelter:[270,360],boost:0.85,
+  note:"120km estuaire Seine. 1er port céréalier Europe. Fort courant fluvial.",
+  maxDepth:11,tyDepth:9,
+  tugRules:[
+    {cond:"loa>=180",min:1,src:"Règlement HAROPA Rouen Art.12"},
+    {cond:"currKt>=1.5",min:1,src:"Procédure pilotage Seine — fort jusant"},
+    {cond:"portCond==='channel'&&loa>=200",min:2,src:"Virage extérieur Seine — 2 tugs min"},
+  ],
+  entryPt:[0.04,0.50],
+  canvasLayout:{
+    water:"#05141e",
+    land:[{pts:[[0,0],[1,0],[1,0.36],[0,0.36]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},{pts:[[0,0.64],[1,0.64],[1,1],[0,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"}],
+    quayWalls:[{x1:0.15,y1:0.36,x2:0.72,y2:0.38,w:3,c:"#4a7090"},{x1:0.15,y1:0.62,x2:0.72,y2:0.64,w:3,c:"#4a7090"}],
+    channels:[{pts:[[0.04,0.50],[0.95,0.50]],axis:true}],
+    depthZones:[{x:0.50,y:0.50,r:0.38,depth:11,label:"Seine -11m"}],
+    currentDir:100,
+  },
+  berths:[
+    {id:"grd_quai",name:"Grand Quai Céréales/Engrais",type:"bulkcarrier",loa:225,beam:34,draft:10.5,hdg:90,cond:"channel",note:"Tug virage extérieur impératif.",px:0.32,py:0.38,d:11,lat:49.4452,lng:1.0892},
+    {id:"p_couronne",name:"Petit-Couronne TotalEnergies",type:"tanker",loa:210,beam:32,draft:9.5,hdg:90,cond:"channel",note:"Vallée encaissée. Vent canalisé.",px:0.58,py:0.38,d:10,lat:49.4112,lng:1.0442},
+    {id:"rou_roro",name:"Terminal Roro Sotrama",type:"ropax",loa:190,beam:30,draft:7.5,hdg:270,cond:"channel",note:"Fort courant jusant Seine.",px:0.44,py:0.62,d:8,lat:49.4358,lng:1.0722},
+  ]},
+ {id:"brest",name:"Brest",region:"Bretagne",lat:48.38,lng:-4.49,mapZoom:12,
+  cAxis:70,dWind:{dir:240,spd:24,name:"Vent d'Ouest"},tidal:{spd:2.5,axis:75},shelter:[90,180],boost:1.2,
+  note:"Fetch Atlantique illimité. Vents O 20–30kt dominants. Courant 3kt au goulet.",
+  maxDepth:15,tyDepth:11,
+  tugRules:[
+    {cond:"loa>=200",min:1,src:"Règlement Port de Brest Art.9"},
+    {cond:"windKt>25",min:1,src:"Procédure pilotage Brest — vent fort"},
+    {cond:"loa>=250",min:2,src:"Règlement Port de Brest Art.9 — grand navire"},
+  ],
+  entryPt:[0.06,0.50],
+  canvasLayout:{
+    water:"#05141e",
+    land:[{pts:[[0,0],[1,0],[1,0.34],[0,0.34]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},{pts:[[0,0.66],[1,0.66],[1,1],[0,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"}],
+    quayWalls:[{x1:0.22,y1:0.34,x2:0.66,y2:0.36,w:4,c:"#4a7090"}],
+    channels:[{pts:[[0.06,0.50],[0.90,0.50]],axis:true}],
+    depthZones:[{x:0.40,y:0.50,r:0.28,depth:15,label:"Rade -15m"},{x:0.08,y:0.50,r:0.06,depth:12,label:"Goulet"}],
+    currentDir:75,
+  },
+  berths:[
+    {id:"laninon",name:"Laninon Commerce/Conteneurs",type:"container",loa:250,beam:38,draft:11.0,hdg:90,cond:"basin",note:"Courant 3kt vive-eau au goulet.",px:0.36,py:0.36,d:12,lat:48.3805,lng:-4.4918},
+    {id:"brest_petro",name:"Quai Pétrolier",type:"tanker",loa:200,beam:32,draft:10.0,hdg:90,cond:"basin",note:"Dérive traversière à l'entrée.",px:0.52,py:0.36,d:10,lat:48.3785,lng:-4.4872},
+    {id:"brest_vrac",name:"Port de Commerce Vracs",type:"bulkcarrier",loa:190,beam:30,draft:9.5,hdg:270,cond:"basin",note:"Passage goulet PM±1h conseillé.",px:0.44,py:0.64,d:10,lat:48.3835,lng:-4.4895},
+  ]},
+ {id:"nantes_saint_nazaire",name:"Nantes–Saint-Nazaire",region:"Loire-Atlantique",lat:47.27,lng:-2.21,mapZoom:12,
+  cAxis:140,dWind:{dir:220,spd:19,name:"Vent WSW"},tidal:{spd:3.5,axis:135},shelter:[0,90],boost:1.05,
+  note:"Estuaire Loire 60km. Courant 3.5kt. 1er port naval France (STX).",
+  maxDepth:16,tyDepth:12,
+  tugRules:[
+    {cond:"loa>=200",min:1,src:"Règlement GPMNSN Art.14"},
+    {cond:"loa>=280",min:2,src:"Règlement GPMNSN Art.14 — grands navires"},
+    {cond:"type==='lng'",min:3,src:"Terminal Montoir — LNG 3 tugs min"},
+    {cond:"type==='cruise'&&loa>=350",min:4,src:"Procédure STX Penhoët — paquebots géants"},
+    {cond:"currKt>=2.0",min:1,src:"Procédure Loire — courant fort"},
+  ],
+  entryPt:[0.50,0.06],
+  canvasLayout:{
+    water:"#05141e",
+    land:[{pts:[[0,0],[0.34,0],[0.34,1],[0,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},{pts:[[0.66,0],[1,0],[1,1],[0.66,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"}],
+    quayWalls:[{x1:0.34,y1:0.22,x2:0.36,y2:0.80,w:4,c:"#4a7090"},{x1:0.64,y1:0.22,x2:0.66,y2:0.80,w:4,c:"#4a7090"}],
+    channels:[{pts:[[0.50,0.06],[0.50,0.94]],axis:true}],
+    depthZones:[
+      {x:0.50,y:0.26,r:0.10,depth:13,label:"Montoir -13m"},
+      {x:0.50,y:0.44,r:0.10,depth:16,label:"Donges -16m"},
+      {x:0.50,y:0.60,r:0.09,depth:12,label:"Cheviré -12m"},
+      {x:0.50,y:0.76,r:0.08,depth:10,label:"Penhoët -10m"},
+    ],
+    currentDir:135,
+  },
+  berths:[
+    {id:"montoir_lng",name:"Montoir-de-Bretagne LNG",type:"lng",loa:310,beam:50,draft:12.5,hdg:90,cond:"channel",note:"Courant flot Loire 3kt. 3 tugs min.",px:0.50,py:0.26,d:13,lat:47.3182,lng:-2.1515},
+    {id:"donges",name:"Donges TotalEnergies",type:"tanker",loa:330,beam:55,draft:16.0,hdg:90,cond:"channel",note:"Courant 2kt. Fond variable.",px:0.50,py:0.44,d:16,lat:47.3042,lng:-2.0760},
+    {id:"chevire",name:"Nantes Cheviré Conteneurs",type:"container",loa:250,beam:38,draft:11.5,hdg:90,cond:"channel",note:"Pont levant à coordonner.",px:0.50,py:0.60,d:12,lat:47.2198,lng:-1.6138},
+    {id:"stnaz_pen",name:"St-Nazaire Penhoët Naval",type:"cruise",loa:400,beam:65,draft:9.0,hdg:90,cond:"basin",note:"Paquebots géants STX. 4+ tugs.",px:0.50,py:0.76,d:10,lat:47.2748,lng:-2.2065},
+  ]},
+ {id:"bordeaux",name:"Bordeaux–Gironde",region:"Gironde",lat:44.86,lng:-0.55,mapZoom:12,
+  cAxis:155,dWind:{dir:210,spd:15,name:"Vent de SW"},tidal:{spd:2.8,axis:150},shelter:[315,60],boost:0.9,
+  note:"Estuaire Gironde. Mascaret coeff>95. Courant 2.8kt. 90km de l'Atlantique.",
+  maxDepth:14,tyDepth:9,
+  tugRules:[
+    {cond:"loa>=180",          min:1, src:"Règlement GPMB Art.11"},
+    {cond:"loa>=250",          min:2, src:"Règlement GPMB Art.11 — grands navires"},
+    {cond:"currKt>=2.0",       min:1, src:"Procédure Gironde — mascaret/fort courant"},
+  ],
+  entryPt:[0.50,0.06],
+  canvasLayout:{
+    water:"#05141e",
+    land:[{pts:[[0,0],[0.34,0],[0.34,1],[0,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"},{pts:[[0.66,0],[1,0],[1,1],[0.66,1]],color:"#1a1e17",stroke:"rgba(80,100,60,0.4)"}],
+    quayWalls:[{x1:0.34,y1:0.25,x2:0.36,y2:0.75,w:4,c:"#4a7090"},{x1:0.64,y1:0.25,x2:0.66,y2:0.75,w:4,c:"#4a7090"}],
+    channels:[{pts:[[0.50,0.06],[0.50,0.94]],axis:true}],
+    depthZones:[{x:0.50,y:0.50,r:0.36,depth:10,label:"Gironde -10m"},{x:0.50,y:0.82,r:0.08,depth:14,label:"Verdon -14m"}],
+    currentDir:150,
+  },
+  berths:[
+    {id:"bassens_nord",name:"Bassens Nord Céréales/Engrais",type:"bulkcarrier",loa:220,beam:34,draft:9.5,hdg:90,cond:"channel",note:"Mi-marée haute obligatoire.",px:0.50,py:0.30,d:10,lat:44.8938,lng:-0.5118},
+    {id:"bassens_sud",name:"Bassens Sud Hydrocarbures",type:"tanker",loa:200,beam:32,draft:9.0,hdg:90,cond:"channel",note:"Jusant >2kt. Tugs côté courant.",px:0.50,py:0.46,d:10,lat:44.8862,lng:-0.5142},
+    {id:"bx_ville",name:"Bordeaux Ville Croisières",type:"cruise",loa:230,beam:35,draft:7.5,hdg:90,cond:"basin",note:"Fort courant traversier Garonne.",px:0.50,py:0.62,d:8,lat:44.8438,lng:-0.5608},
+    {id:"verdon",name:"Le Verdon Pétrolier/Rade",type:"tanker",loa:300,beam:48,draft:14.0,hdg:90,cond:"open",note:"Houle Atlantique. Rade attente.",px:0.50,py:0.82,d:14,lat:45.5402,lng:-1.0618},
+  ]},
+];
+
+// ─── ÉTAT GLOBAL ───
+const S={
+  vesselType:"container",maneuverType:"entry",portCondition:"channel",propType:"cpe",
+  portId:"marseille",berthId:null,
+  windKt:18,windDir:315,currKt:1.0,currDir:90,heading:315
+};
+let curLayer="map", animF=null, animT=0;
+
+// ─── UTILS ───
+const d2r=d=>d*Math.PI/180;
+const r2d=r=>((r*180/Math.PI)+360)%360;
+function angBetween(a,b){let d=Math.abs((a-b+360))%360;return d>180?360-d:d;}
+function isShielded(dir,sh){if(!sh||sh.length<2)return false;const[a,b]=sh;return a<b?(dir>=a&&dir<=b):(dir>=a||dir<=b);}
+function getPort(){return PORTS.find(p=>p.id===S.portId)||null;}
+function getBerth(){const p=getPort();return p?p.berths.find(b=>b.id===S.berthId)||null:null;}
+function fv(id){return parseFloat(document.getElementById(id)?.value)||0;}
+function dirLabel(d){const dirs=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];return dirs[Math.round(((d%360)+360)%360/22.5)%16];}
+function bftLabel(kt){let b=0;for(let i=0;i<BFT.length;i++)if(kt>=BFT[i][0])b=i;return`Bf ${b} — ${BFT[b][1]}`;}
+function ktMs(kt){return (kt*0.5144).toFixed(2);}
+
+// ─── ESTIMATION PARAMÈTRES MODÈLE B ───
+function estimateModelB(type, loa, beam, draft, dwt, kw){
+  const vt=VTYPES.find(v=>v.id===type)||VTYPES[0];
+  // Hauteur totale estimée
+  const H_total=Math.round((draft*vt.H_mult + (type==='cruise'?10:type==='ropax'?6:3))*2)/2;
+  // Puissance étrave estimée (% puissance principale, min 500kW si LOA>120m)
+  const kw_etrave=loa>120 ? Math.round(Math.max(kw*vt.kw_etrave_pct, 500)/100)*100 : 0;
+  // Poupe : seulement LNG, cruise, azipod
+  const kw_poupe=(type==='lng'||type==='cruise') ? Math.round(kw_etrave*0.6/100)*100 : 0;
+  return {H_total, kw_etrave, kw_poupe};
+}
+function markManual(srcId){
+  const el=document.getElementById(srcId);
+  if(el){el.textContent='saisi';el.style.color='var(--teal)';}
+}
+function markEstimated(srcId){
+  const el=document.getElementById(srcId);
+  if(el){el.textContent='estimée';el.style.color='var(--orange)';}
+}
+function markSource(srcId){
+  const el=document.getElementById(srcId);
+  if(el){el.textContent='IMO';el.style.color='var(--green)';}
+}
+
+// ─── RECHERCHE IMO ───
+function lookupIMO(){
+  const raw=document.getElementById('imo-input').value.trim();
+  const v=VESSELS.find(x=>x.imo===raw);
+  const el=document.getElementById('imo-result');
+  if(!v){
+    el.style.display='block';
+    el.style.background='rgba(255,71,87,0.06)';
+    el.style.borderColor='rgba(255,71,87,0.2)';
+    el.innerHTML=`<span style="color:var(--red)">⚠ IMO ${raw} non trouvé dans la base locale.</span> <span style="color:var(--muted)">Renseignez les dimensions manuellement.</span>`;
+    // Auto-estimate based on current values
+    const est=estimateModelB(S.vesselType,fv('f-loa'),fv('f-beam'),fv('f-draft'),fv('f-dwt'),fv('f-engine'));
+    document.getElementById('f-htot').value=est.H_total;
+    document.getElementById('f-etrave').value=est.kw_etrave;
+    document.getElementById('f-poupe').value=est.kw_poupe;
+    ['htot-src','etrave-src','poupe-src'].forEach(markEstimated);
+    return;
+  }
+  el.style.display='block';
+  el.style.background='rgba(0,212,255,0.04)';
+  el.style.borderColor='rgba(0,212,255,0.15)';
+  el.innerHTML=`<span style="color:var(--cyan)">${v.flag} ${v.name}</span> <span style="color:var(--muted);font-size:10px">${v.type} · ${v.loa}m × ${v.beam}m × ${v.draft}m · ${v.dwt.toLocaleString()}t DWT · ${v.kw.toLocaleString()}kW</span>`;
+  ['f-loa','f-beam','f-draft','f-dwt','f-engine'].forEach((id,i)=>document.getElementById(id).value=[v.loa,v.beam,v.draft,v.dwt,v.kw][i]);
+  S.vesselType=v.type; S.propType=v.prop;
+  document.querySelectorAll('#vtype .sb').forEach((b,i)=>b.classList.toggle('on',VTYPES[i].id===v.type));
+  document.querySelectorAll('#prop-grid .sb').forEach((b,i)=>b.classList.toggle('on',PROPS[i].id===v.prop));
+  // Populate model B params — from DB if present, otherwise estimate
+  if(v.H_total){
+    document.getElementById('f-htot').value=v.H_total; markSource('htot-src');
+  } else {
+    const est=estimateModelB(v.type,v.loa,v.beam,v.draft,v.dwt,v.kw);
+    document.getElementById('f-htot').value=est.H_total; markEstimated('htot-src');
+  }
+  if(v.kw_etrave!==undefined){
+    document.getElementById('f-etrave').value=v.kw_etrave; markSource('etrave-src');
+  } else {
+    const est=estimateModelB(v.type,v.loa,v.beam,v.draft,v.dwt,v.kw);
+    document.getElementById('f-etrave').value=est.kw_etrave; markEstimated('etrave-src');
+  }
+  if(v.kw_poupe!==undefined){
+    document.getElementById('f-poupe').value=v.kw_poupe; markSource('poupe-src');
+  } else {
+    const est=estimateModelB(v.type,v.loa,v.beam,v.draft,v.dwt,v.kw);
+    document.getElementById('f-poupe').value=est.kw_poupe; markEstimated('poupe-src');
+  }
+  updEng(); onDim();
+}
+
+// ─── MÉTÉO ───
+function loadWxOM(){
+  const port=getPort();
+  document.getElementById('wx-body').innerHTML='<div style="font-size:11px;color:var(--muted);font-style:italic">Chargement Open-Meteo…</div>';
+  if(!port)return;
+  const h=new Date().getHours();
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${port.lat}&longitude=${port.lng}&hourly=wind_speed_10m,wind_direction_10m,wave_height&wind_speed_unit=kn&forecast_days=1&timezone=auto`)
+    .then(r=>r.json()).then(d=>{
+      const ws=d.hourly?.wind_speed_10m?.[h]??null,wd=d.hourly?.wind_direction_10m?.[h]??null,wh=d.hourly?.wave_height?.[h]??null;
+      _renderWx(ws,wd,wh,'Open-Meteo');
+    }).catch(()=>document.getElementById('wx-body').innerHTML='<div style="font-size:11px;color:rgba(255,165,2,.7)">⚠ Open-Meteo indisponible.</div>');
+}
+function loadWxMF(){
+  // Météo-France API Publique (open — pas de clé API nécessaire pour l'endpoint de base)
+  const port=getPort();
+  document.getElementById('wx-body').innerHTML='<div style="font-size:11px;color:var(--muted);font-style:italic">Tentative Météo-France…</div>';
+  if(!port)return;
+  // Météo-France endpoint public (AROME/ARPEGE via open-meteo miroir MF)
+  fetch(`https://api.open-meteo.com/v1/meteofrance?latitude=${port.lat}&longitude=${port.lng}&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&forecast_days=1&timezone=auto`)
+    .then(r=>r.json()).then(d=>{
+      const h=new Date().getHours();
+      const ws=d.hourly?.wind_speed_10m?.[h]??null,wd=d.hourly?.wind_direction_10m?.[h]??null;
+      _renderWx(ws,wd,null,'Météo-France (ARPEGE)');
+    }).catch(()=>loadWxOM()); // fallback
+}
+function _renderWx(ws,wd,wh,src){
+  const el=document.getElementById('wx-body');
+  const wsMs=ws!=null?(ws*0.5144).toFixed(1):null;
+  el.innerHTML=`
+    <div style="font-size:8px;color:var(--dim);margin-bottom:6px;font-family:monospace">Source: ${src} · ${new Date().toLocaleTimeString('fr-FR')}</div>
+    <div class="wxg">
+      <div class="wxc"><div class="wxl">Vent</div><div class="wxv" style="color:#a78bfa">${ws!=null?Math.round(ws)+'kt':'n/d'}</div><div class="wxs">${wsMs?wsMs+'m/s':''}</div></div>
+      <div class="wxc"><div class="wxl">Direction</div><div class="wxv" style="color:#a78bfa">${wd!=null?Math.round(wd)+'°':'n/d'}</div><div class="wxs">${wd!=null?dirLabel(wd):''}</div></div>
+      <div class="wxc"><div class="wxl">Hs</div><div class="wxv" style="color:var(--cyan)">${wh!=null?wh.toFixed(1)+'m':'—'}</div><div class="wxs">hauteur sig.</div></div>
+      <div class="wxc"><div class="wxl">Beaufort</div><div class="wxv" style="color:var(--orange);font-size:11px">${ws!=null?bftLabel(ws).split('—')[0].trim():'—'}</div><div class="wxs">${ws!=null?bftLabel(ws).split('—')[1]?.trim()||'':''}</div></div>
+    </div>
+    <button onclick="applyWx(${ws??0},${wd??0})" style="width:100%;padding:7px;border-radius:7px;border:none;background:rgba(0,212,255,0.09);color:var(--cyan);font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;border:1px solid rgba(0,212,255,0.16)">⇣ Appliquer aux réglages manuels</button>`;
+}
+function applyWx(ws,wd){
+  S.windKt=Math.round(ws||0); S.windDir=Math.round(wd||0);
+  document.getElementById('wkt').value=S.windKt;
+  document.getElementById('wms').value=(S.windKt*0.5144).toFixed(1);
+  document.getElementById('wsl').value=S.windKt;
+  document.getElementById('wdir').value=S.windDir;
+  document.getElementById('w-bft').textContent=bftLabel(S.windKt);
+  document.getElementById('wdir-l').textContent=dirLabel(S.windDir);
+  drawCmp('cmp-w',S.windDir,'#a78bfa'); updAngles(); updSum(); updBar();
+}
+
+// ─── SLIDERS MÉTÉO ───
+function wktCh(){const kt=parseFloat(document.getElementById('wkt').value)||0;S.windKt=kt;document.getElementById('wms').value=(kt*0.5144).toFixed(1);document.getElementById('wsl').value=kt;document.getElementById('w-bft').textContent=bftLabel(kt);updSum();updBar();}
+function wmsCh(){const ms=parseFloat(document.getElementById('wms').value)||0;const kt=+(ms/0.5144).toFixed(1);S.windKt=kt;document.getElementById('wkt').value=kt;document.getElementById('wsl').value=kt;document.getElementById('w-bft').textContent=bftLabel(kt);updSum();updBar();}
+function wslCh(){const kt=parseFloat(document.getElementById('wsl').value)||0;S.windKt=kt;document.getElementById('wkt').value=kt;document.getElementById('wms').value=(kt*0.5144).toFixed(1);document.getElementById('w-bft').textContent=bftLabel(kt);updSum();updBar();}
+function cktCh(){const kt=parseFloat(document.getElementById('ckt').value)||0;S.currKt=kt;document.getElementById('cms').value=(kt*0.5144).toFixed(2);document.getElementById('csl').value=kt;updSum();updBar();}
+function cmsCh(){const ms=parseFloat(document.getElementById('cms').value)||0;const kt=+(ms/0.5144).toFixed(2);S.currKt=kt;document.getElementById('ckt').value=kt;document.getElementById('csl').value=kt;updSum();updBar();}
+function cslCh(){const kt=parseFloat(document.getElementById('csl').value)||0;S.currKt=kt;document.getElementById('ckt').value=kt;document.getElementById('cms').value=(kt*0.5144).toFixed(2);updSum();updBar();}
+
+function dirCh(){
+  S.windDir=+((document.getElementById('wdir').value||0)+360)%360;
+  S.currDir=+((document.getElementById('cdir').value||0)+360)%360;
+  S.heading=+((document.getElementById('hdg').value||0)+360)%360;
+  document.getElementById('wdir').value=S.windDir;
+  document.getElementById('cdir').value=S.currDir;
+  document.getElementById('hdg').value=S.heading;
+  document.getElementById('wdir-l').textContent=dirLabel(S.windDir);
+  document.getElementById('cdir-l').textContent=dirLabel(S.currDir);
+  document.getElementById('hdg-l').textContent=dirLabel(S.heading);
+  drawCmp('cmp-w',S.windDir,'#a78bfa');
+  drawCmp('cmp-c',S.currDir,'#34d399');
+  drawCmp('cmp-h',S.heading,'#00d4ff');
+  updAngles(); updSum();
+}
+
+function updSum(){
+  const el=document.getElementById('met-sum');if(!el)return;
+  const port=getPort();
+  el.innerHTML=`<div style="font-size:10px;font-family:monospace;display:flex;flex-direction:column;gap:4px">
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Vent</span><span style="color:#a78bfa">${S.windKt}kt / ${ktMs(S.windKt)}m/s / ${dirLabel(S.windDir)} ${S.windDir}°</span></div>
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Courant</span><span style="color:#34d399">${S.currKt}kt / ${ktMs(S.currKt)}m/s / ${dirLabel(S.currDir)} ${S.currDir}°</span></div>
+    ${port?`<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Boost géo</span><span style="color:var(--cyan)">×${port.boost} (${port.dWind.name})</span></div>`:''}
+    <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Beaufort</span><span style="color:var(--orange)">${bftLabel(S.windKt)}</span></div>
+  </div>`;
+}
+
+// ─── COMPAS HAUTE RÉSOLUTION (devicePixelRatio) ───
+function drawCmp(id,deg,color){
+  const cv=document.getElementById(id);if(!cv)return;
+  const dpr=window.devicePixelRatio||1;
+  const cssW=44,cssH=44;
+  if(cv.width!==cssW*dpr||cv.height!==cssH*dpr){
+    cv.width=cssW*dpr;cv.height=cssH*dpr;
+    cv.style.width=cssW+'px';cv.style.height=cssH+'px';
+  }
+  const ctx=cv.getContext('2d');
+  ctx.save();ctx.scale(dpr,dpr);
+  const W=cssW,H=cssH,cx=W/2,cy=H/2,r=W*0.36;
+  ctx.clearRect(0,0,W,H);
+  // Fond cercle
+  ctx.fillStyle='rgba(5,12,22,0.85)';ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=0.5;ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);ctx.stroke();
+  // Graduations
+  for(let i=0;i<36;i++){
+    const a=(i*10-90)*Math.PI/180,maj=i%9===0,med=i%3===0;
+    const len=maj?6:med?4:2;
+    const rIn=r-(maj?7:med?5:3);
+    ctx.strokeStyle=maj?'rgba(255,255,255,0.35)':med?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.05)';
+    ctx.lineWidth=maj?1:0.5;
+    ctx.beginPath();ctx.moveTo(cx+rIn*Math.cos(a),cy+rIn*Math.sin(a));ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));ctx.stroke();
+  }
+  // Cardinalités
+  [{l:'N',a:0},{l:'E',a:90},{l:'S',a:180},{l:'O',a:270}].forEach(({l,a})=>{
+    const rad=(a-90)*Math.PI/180;
+    ctx.fillStyle=l==='N'?color:'rgba(200,215,230,0.55)';
+    ctx.font=`bold ${l==='N'?8:7}px 'Segoe UI',sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(l,cx+(r-8)*Math.cos(rad),cy+(r-8)*Math.sin(rad));
+  });
+  // Aiguille
+  const ang=(deg-90)*Math.PI/180;
+  // Ombre aiguille
+  ctx.save();ctx.shadowColor=color;ctx.shadowBlur=4*dpr;
+  ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(cx-r*0.20*Math.cos(ang),cy-r*0.20*Math.sin(ang));
+  ctx.lineTo(cx+r*0.78*Math.cos(ang),cy+r*0.78*Math.sin(ang));ctx.stroke();
+  ctx.restore();
+  // Contre-aiguille (blanche courte)
+  ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-r*0.18*Math.cos(ang),cy-r*0.18*Math.sin(ang));ctx.stroke();
+  // Centre
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(cx,cy,2.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.beginPath();ctx.arc(cx,cy,1,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function updAngles(){
+  const port=getPort(),ref=port?port.cAxis:S.heading;
+  const wA=angBetween(S.windDir,ref),cA=angBetween(S.currDir,ref);
+  const el=document.getElementById('angles');if(!el)return;
+  el.innerHTML=[{l:"Vent",a:wA,c:"#a78bfa"},{l:"Courant",a:cA,c:"#34d399"}].map(({l,a,c})=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <span style="font-size:11px;color:var(--muted)">${l}</span>
+      <span style="font-family:monospace;font-size:13px;color:${c};font-weight:700">${a.toFixed(0)}°</span>
+      <span style="font-size:9px;color:var(--dim);background:rgba(255,255,255,0.04);padding:2px 5px;border-radius:3px">${a>60?"Traversier ⚠":a>30?"Oblique":"Axial"}</span>
+    </div>`).join('');
+}
+
+// ─── MODÈLE B — BILAN DE FORCES EN REPÈRE NAVIRE ───
+function computeResult(){
+  const port=getPort(),berth=getBerth();
+  const vt=VTYPES.find(v=>v.id===S.vesselType)||VTYPES[0];
+  const pc=PCONDS.find(c=>c.id===S.portCondition)||PCONDS[0];
+  const prop=PROPS.find(p=>p.id===S.propType)||PROPS[0];
+
+  // ── Dimensions ──
+  const loa=fv('f-loa'),beam=fv('f-beam'),draft=fv('f-draft');
+  const H_total=fv('f-htot')||estimateModelB(S.vesselType,loa,beam,draft,fv('f-dwt'),fv('f-engine')).H_total;
+  const franc_bord=Math.max(H_total-draft, 1.5);   // surface vélique réelle
+  const kw_main=fv('f-engine');
+  const kw_etrave=fv('f-etrave');
+  const kw_poupe=fv('f-poupe');
+
+  // ── Positions longitudinales (m depuis centre géométrique, + = proue) ──
+  const Xv = loa * vt.xv_pct;          // centre vélique
+  const Xd = 0;                          // centre de dérive ≈ centre géom.
+  const Xpe = +(loa/2 - 6);             // propulseur étrave (proue)
+  const Xpp = -(loa/2 - 6);             // propulseur poupe (poupe)
+  const Xa_fwd = +(loa/2 - 10);         // point d'attache tug AV
+  const Xa_aft = -(loa/2 - 10);         // point d'attache tug AR
+  const theta_cable = 15 * Math.PI/180; // angle câble / transversal (15° typique)
+
+  // ── Vitesses effectives (vent + abris + courant marée composés) ──
+  let effW = S.windKt;
+  if(port) effW = isShielded(S.windDir, port.shelter) ? S.windKt*0.65 : S.windKt*port.boost;
+  let effCs = S.currKt, effCd = S.currDir;
+  if(port){
+    const tc=port.tidal.spd*0.4;
+    const cx=S.currKt*Math.cos(d2r(S.currDir))+tc*Math.cos(d2r(port.tidal.axis));
+    const cy=S.currKt*Math.sin(d2r(S.currDir))+tc*Math.sin(d2r(port.tidal.axis));
+    effCs=Math.sqrt(cx*cx+cy*cy); effCd=r2d(Math.atan2(cy,cx));
+  }
+
+  // ── Angles par rapport à l'axe navire ──
+  const ref = berth ? berth.hdg : (port ? port.cAxis : S.heading);
+  const wA = angBetween(S.windDir, ref);   // angle vent / axe navire
+  const cA = angBetween(effCd, ref);       // angle courant / axe navire
+  const wR = d2r(wA), cR = d2r(cA);
+
+  // ── Surfaces ──
+  const Aw_lat  = franc_bord * loa;                     // surface vélique latérale [m²]
+  const Aw_long = franc_bord * beam * 0.6;              // surface vélique longitudinale
+  const Ac_lat  = draft * loa * vt.cf;                  // surface hydro latérale (avec Cx type navire)
+  const Ac_long = draft * beam * 0.7 * vt.cf;
+
+  // ── Coefficients aérodynamiques directionnels ──
+  const Cy_w = Math.sin(wR) * (1 + 0.2*Math.sin(2*wR));     // transversal vent
+  const Cx_w = -Math.cos(wR) * 0.7;                          // longitudinal vent
+  const Cy_c = Math.sin(cR) * (1 + 0.4*Math.sin(cR)**2);    // transversal courant
+  const Cx_c = -Math.cos(cR) * 0.8;                          // longitudinal courant
+
+  // ── Forces vent [N] ──
+  const Vw_ms = effW * 0.5144;
+  const Fw_Y = 0.5 * 1.25 * Vw_ms**2 * Aw_lat  * vt.wf * Cy_w;
+  const Fw_X = 0.5 * 1.25 * Vw_ms**2 * Aw_long * vt.wf * Cx_w;
+  const Mw   = Fw_Y * Xv;   // moment de lacet vent [N·m]
+
+  // ── Forces courant [N] ──
+  const Vc_ms = effCs * 0.5144;
+  const Fc_Y = 0.5 * 1025 * Vc_ms**2 * Ac_lat  * Cy_c;
+  const Fc_X = 0.5 * 1025 * Vc_ms**2 * Ac_long * Cx_c;
+  const Mc   = Fc_Y * Xd;   // ≈ 0 si Xd=0
+
+  // ── Propulsion propre ──
+  // Hélice principale : force longitudinale uniquement
+  const Fp_X = kw_main * vt.k_prop * prop.m;   // [N]
+
+  // Propulseurs transversaux : force Y + moment
+  const k_thr = 0.010;   // kW → N pour thruster dédié
+  const Fp_etrave_Y = kw_etrave * k_thr;
+  const Fp_poupe_Y  = kw_poupe  * k_thr;
+  const M_prop = Fp_etrave_Y * Xpe + Fp_poupe_Y * Xpp;
+
+  // Composante Y utile de la propulsion principale (si azipod, peut s'orienter)
+  // Pour azipod seulement : hélice peut contribuer en Y jusqu'à 60% de sa force
+  const Fp_main_Y = (S.propType==='azipod') ? Fp_X * 0.60 : 0;
+
+  // ── Résidus à compenser par les remorqueurs ──
+  const Fy_res = Math.max(0, Math.abs(Fw_Y) + Math.abs(Fc_Y) - Fp_etrave_Y - Fp_poupe_Y - Fp_main_Y);
+  const Mz_res = Math.abs(Mw + Mc - M_prop);
+
+  // ── Facteur de sécurité (basé sur condition portuaire uniquement) ──
+  const SF = 1.35 * pc.f;
+
+  // ── Résolution 2×2 : N_av et N_ar ──
+  // Chaque tug apporte : F_Y_i = BP_i × cos(theta_cable) en force transversale utile
+  // Moment créé par tug AV : F_Y_i × Xa_fwd  |  tug AR : F_Y_i × |Xa_aft|
+  const portTugs = (TUGS_DB[port?.id]||[]).filter(t=>t.type!=='AHTS');
+  const fleetBPs = portTugs.map(t=>t.bp).sort((a,b)=>a-b);
+  const tugBP_t  = fleetBPs.length ? fleetBPs[Math.floor(fleetBPs.length/2)] : 60;
+  const tugBP_N  = tugBP_t * 9810;   // tonnes → N (1t ≈ 9810 N)
+  const F_tug_1  = tugBP_N * Math.cos(theta_cable);   // force Y utile d'un tug
+
+  // Équations :
+  //   N_av × F1 × Xa_fwd + N_ar × F1 × |Xa_aft| = Fy_res × SF   (équilibre Y)
+  //   N_av × F1 × Xa_fwd - N_ar × F1 × |Xa_aft| = Mz_res × SF   (équilibre Mz)
+  // → 2×F1×Xa_fwd×N_av = (Fy_res + Mz_res/|Xa_aft|) × SF  … mais simplifions :
+  // Si Xa_fwd ≈ |Xa_aft| (symétrie) :
+  //   N_av = (Fy_res×SF + Mz_res×SF/Xa_fwd) / (2×F_tug_1)
+  //   N_ar = (Fy_res×SF - Mz_res×SF/Xa_fwd) / (2×F_tug_1)
+  const Xa = Math.abs(Xa_fwd);
+  let N_av_raw = F_tug_1 > 0 ? (Fy_res*SF + Mz_res*SF/Xa) / (2*F_tug_1) : 0;
+  let N_ar_raw = F_tug_1 > 0 ? (Fy_res*SF - Mz_res*SF/Xa) / (2*F_tug_1) : 0;
+  // Un N négatif signifie que le moment aide de ce côté → plancher à 0
+  N_ar_raw = Math.max(N_ar_raw, 0);
+  N_av_raw = Math.max(N_av_raw, 0);
+
+  let N_av_phys = Math.ceil(N_av_raw);
+  let N_ar_phys = Math.ceil(N_ar_raw);
+  let tugs_phys = N_av_phys + N_ar_phys;
+
+  // Manœuvre sortie → inverser AV/AR
+  if(S.maneuverType==='exit') { [N_av_phys,N_ar_phys]=[N_ar_phys,N_av_phys]; }
+  if(S.maneuverType==='dock') { N_av_phys=Math.max(1,N_av_phys); }
+
+  // ── Couche réglementaire : tugRules du port ──
+  const tugRules = port?.tugRules || [];
+  const triggeredRules = [];
+  let tugs_reg = 0;
+  for(const rule of tugRules){
+    const cond = rule.cond
+      .replace(/loa/g, loa)
+      .replace(/type/g, `"${S.vesselType}"`)
+      .replace(/portCond/g, `"${S.portCondition}"`)
+      .replace(/windKt/g, effW)
+      .replace(/currKt/g, effCs);
+    let triggered = false;
+    try { triggered = !!eval(cond); } catch(e){}
+    if(triggered){
+      triggeredRules.push(rule);
+      tugs_reg = Math.max(tugs_reg, rule.min);
+    }
+  }
+
+  // ── Verdict final ──
+  const tugs_final = Math.max(tugs_phys, tugs_reg);
+  const fwd = S.maneuverType==='exit' ? N_ar_phys : N_av_phys;
+  const aft = tugs_final - fwd;
+
+  // Difficulté /10 : basée sur rapport BP requis / BP flotte
+  const BPreq_kN = (Fy_res * SF) / 1000;   // kN
+  const BPreq_t  = BPreq_kN * 0.102;        // t
+  const difficulty = Math.min(Math.round((BPreq_t / (tugBP_t * 4)) * 10), 10);
+
+  // ── Risques ──
+  const risks=[];
+  if(effW>25) risks.push({lv:"high",t:`Vent effectif ${effW.toFixed(0)}kt (${ktMs(effW)}m/s) — dérive critique`});
+  else if(effW>S.windKt&&port) risks.push({lv:"med",t:`Vent amplifié ${S.windKt}→${effW.toFixed(0)}kt (${port.dWind.name})`});
+  if(wA>60&&effW>12) risks.push({lv:"med",t:`Vent traversier ${wA.toFixed(0)}° / axe navire — force max`});
+  if(Math.abs(Mw)>0&&Math.abs(Xv)>loa*0.08) risks.push({lv:"med",t:`Moment de lacet vent élevé (centre vélique excentré ${(Xv).toFixed(0)}m)`});
+  if(effCs>1.5) risks.push({lv:"high",t:`Courant combiné ${effCs.toFixed(1)}kt (${ktMs(effCs)}m/s)`});
+  if(port?.tidal.spd>2) risks.push({lv:"med",t:`Fort courant marée — ${port.note.substring(0,55)}`});
+  if(loa>250) risks.push({lv:"med",t:`Navire long (${loa}m) — giration lente, espace critique`});
+  if(draft>12) risks.push({lv:"med",t:`Tirant ${draft}m — vérifier squat en chenal`});
+  if(vt.id==="lng") risks.push({lv:"med",t:"LNG — ISGOTT 5e éd., zone sécurité 500m"});
+  if(berth) risks.push({lv:"info",t:berth.note});
+  if(!risks.length) risks.push({lv:"low",t:"Conditions nominales"});
+
+  // ── Vitesse de dérive résiduelle ──
+  const Cd_lat=0.40;
+  const Fdrift_N=Fy_res;
+  const denom=1025*loa*draft*Cd_lat;
+  const vDriftMs=denom>0?Math.sqrt(Math.max(0,2*Fdrift_N/denom)):0;
+  const vDriftKt=vDriftMs/0.5144;
+
+  return {
+    tugs:tugs_final, fwd, aft, difficulty,
+    tugs_phys, tugs_reg, triggeredRules,
+    N_av_phys, N_ar_phys,
+    risks,
+    BPreq:BPreq_t.toFixed(1), sf:SF.toFixed(2),
+    tugBP:tugBP_t, fleetBPs, fleetSize:portTugs.length,
+    // Forces en kN pour affichage bilan
+    Fw_Y:(Fw_Y/1000).toFixed(1), Fw_X:(Fw_X/1000).toFixed(1),
+    Fc_Y:(Fc_Y/1000).toFixed(1), Fc_X:(Fc_X/1000).toFixed(1),
+    Fp_etrave:(Fp_etrave_Y/1000).toFixed(1), Fp_poupe:(Fp_poupe_Y/1000).toFixed(1),
+    Fp_main_Y:(Fp_main_Y/1000).toFixed(1),
+    Fy_res:(Fy_res/1000).toFixed(1), Mz_res:(Mz_res/1000).toFixed(0),
+    franc_bord:franc_bord.toFixed(1), H_total:H_total.toFixed(1),
+    effW:effW.toFixed(1), effWms:ktMs(effW),
+    effCs:effCs.toFixed(2), effCsms:ktMs(effCs), effCd:effCd.toFixed(0),
+    vDriftKt:vDriftKt.toFixed(2), vDriftMs:vDriftMs.toFixed(2),
+    // Pour compatibilité canvas
+    Ftot:((Math.abs(Fw_Y)+Math.abs(Fc_Y))/1000).toFixed(1),
+    net:(Fy_res/1000).toFixed(1), propF:((Fp_etrave_Y+Fp_poupe_Y+Fp_main_Y)/1000).toFixed(1),
+    propPct:((Math.abs(Fw_Y)+Math.abs(Fc_Y))>0?((Fp_etrave_Y+Fp_poupe_Y+Fp_main_Y)/(Math.abs(Fw_Y)+Math.abs(Fc_Y))*100).toFixed(0):"0"),
+  };
+}
+
+// ─── SQUAT (formule Barras simplifiée) ───
+function calcSquat(){
+  const Vs=fv('sq-spd'),h=fv('sq-depth'),W=fv('sq-cw'),Cb=fv('sq-cb');
+  const loa=fv('f-loa'),beam=fv('f-beam'),draft=fv('f-draft');
+  if(!Vs||!h||!W||!Cb){return;}
+  // Section transversale mouillage As = h × W
+  const As=h*W;
+  // Section transversale navire (approx bloc) Ab=beam*draft
+  const Ab=beam*draft;
+  // Coefficient de blocage Cb_s = Ab/As
+  const Cbs=Ab/As;
+  // Nombre de Froude profondeur Fnh
+  const Fnh=Vs*0.5144/Math.sqrt(9.81*h);
+  // Squat proue (formule Barras)  S = Cb × B² × Vs² / (20 × h × As^0.5)  simplifiée
+  // Version Barras 2004: S0 = Cb * Vs^2 / 100  (en m, avec Vs en kt)
+  const S_bow=Cb*(Vs**2)/100*(1+0.5*Cbs);
+  const S_stern=S_bow*0.5;
+  const ukc=h-draft-S_bow;
+  const alert=ukc<1.0?{c:"var(--red)",t:"⚠ UKC CRITIQUE (<1m) — Réduire vitesse ou attendre marée haute"}:
+               ukc<2.0?{c:"var(--orange)",t:"⚠ UKC serré (<2m) — Surveiller en continu"}:
+               {c:"var(--green)",t:"✓ UKC suffisant"};
+  document.getElementById('squat-res').innerHTML=`
+    <div class="squat-card"><div class="squat-val" style="color:${ukc<1?'var(--red)':ukc<2?'var(--orange)':'var(--green)'}">${S_bow.toFixed(2)}m</div><div class="squat-lbl">Squat proue</div></div>
+    <div class="squat-card"><div class="squat-val">${S_stern.toFixed(2)}m</div><div class="squat-lbl">Squat poupe</div></div>
+    <div class="squat-card"><div class="squat-val" style="color:${ukc<1?'var(--red)':ukc<2?'var(--orange)':'var(--green)'}">${ukc.toFixed(2)}m</div><div class="squat-lbl">UKC réel</div></div>`;
+  document.getElementById('squat-alert').innerHTML=`<div style="padding:7px 10px;border-radius:7px;background:rgba(255,255,255,0.03);border:1px solid ${alert.c}33;font-size:11px;color:${alert.c}">${alert.t} · Fnh=${Fnh.toFixed(3)}</div>`;
+}
+
+// ─── MARÉES (règle des douzièmes) ───
+function calcTidal(){
+  const portId=document.getElementById('td-port')?.value;
+  const port=PORTS.find(p=>p.id===portId)||PORTS[0];
+  const coef=parseInt(document.getElementById('td-coef')?.value)||70;
+  const bmStr=document.getElementById('td-bm')?.value||'06:00';
+  const reqDraft=fv('td-draft');
+  // Marnage estimé selon port et coefficient (données SHOM approximées)
+  const marnageMax={marseille:0.5,sete:0.4,lehavre:8.5,dunkerque:6.2,rouen:7.8,brest:8.2,nantes_saint_nazaire:6.5,bordeaux:5.2};
+  const m0=marnageMax[portId]||6.0;
+  const marnage=m0*(coef/95); // proportionnel au coef
+  // BM = niveau bas, PM = 6h après
+  const [bh,bm]=bmStr.split(':').map(Number);
+  const bmMin=bh*60+(bm||0);
+  const pmMin=bmMin+360; // PM = 6h après BM
+  // Profondeur fond au BMVE (fond du port)
+  const fondBMVE=port.tyDepth-(m0);
+  // Douzièmes : 1,2,3,3,2,1 sur 6 tranches horaires
+  const douzieme=marnage/12;
+  const fractions=[1,2,3,3,2,1]; // en 30 min → par heure : 2,4,6,6,4,2
+  // Calcul niveau eau chaque 30 min sur 12h
+  const nPts=25; // 0 à 12h par 30min
+  const levels=[];
+  for(let i=0;i<nPts;i++){
+    const t=i*30; // minutes depuis BM
+    let lvl=0;
+    let elapsed=0;
+    for(let seg=0;seg<6;seg++){
+      const segDur=60;
+      const segHt=fractions[seg]*douzieme;
+      if(elapsed+segDur<=t){lvl+=segHt;elapsed+=segDur;}
+      else if(elapsed<t){lvl+=segHt*(t-elapsed)/segDur;break;}
+      else break;
+    }
+    levels.push(fondBMVE+lvl);
+  }
+  // Canvas
+  const cv=document.getElementById('tidal-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const minL=Math.min(...levels)-0.5,maxL=Math.max(...levels)+0.5;
+  const yScale=(H-30)/(maxL-minL);
+  const xScale=(W-40)/(nPts-1);
+  // Fond
+  ctx.fillStyle='rgba(0,20,40,0.6)';ctx.fillRect(0,0,W,H);
+  // Grille horizontale
+  for(let d=Math.ceil(minL);d<=maxL;d++){
+    const y=H-15-(d-minL)*yScale;
+    ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.25)';ctx.font='8px monospace';ctx.textAlign='right';ctx.fillText(d+'m',26,y+3);
+  }
+  // Ligne tirant requis
+  const yReq=H-15-(reqDraft-minL)*yScale;
+  if(reqDraft>=minL&&reqDraft<=maxL){
+    ctx.strokeStyle='rgba(255,71,87,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(30,yReq);ctx.lineTo(W,yReq);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,71,87,0.7)';ctx.font='8px monospace';ctx.textAlign='left';ctx.fillText(`T=${reqDraft}m`,W-50,yReq-3);
+  }
+  // Courbe de marée (remplissage eau)
+  ctx.beginPath();ctx.moveTo(30,H-15);
+  levels.forEach((l,i)=>ctx.lineTo(30+i*xScale,H-15-(l-minL)*yScale));
+  ctx.lineTo(30+(nPts-1)*xScale,H-15);ctx.closePath();
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,100,200,0.4)');grad.addColorStop(1,'rgba(0,50,100,0.1)');
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle='rgba(0,180,255,0.8)';ctx.lineWidth=2;
+  ctx.beginPath();levels.forEach((l,i)=>{const x=30+i*xScale,y=H-15-(l-minL)*yScale;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
+  // Axes horaires
+  for(let i=0;i<nPts;i+=2){
+    const tMin=bmMin+i*30;const hh=Math.floor(tMin/60)%24;const mm=tMin%60;
+    ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='8px monospace';ctx.textAlign='center';
+    ctx.fillText(`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`,30+i*xScale,H-3);
+  }
+  // Fenêtre passable
+  const passable=levels.filter(l=>l>=reqDraft);
+  const info=document.getElementById('tidal-info');
+  if(passable.length===0){info.textContent=`⚠ Tirant ${reqDraft}m jamais atteignable — fond ${fondBMVE.toFixed(1)}m + marnage ${marnage.toFixed(1)}m = ${(fondBMVE+marnage).toFixed(1)}m max`;}
+  else{
+    const firstOk=levels.findIndex(l=>l>=reqDraft);
+    const lastOk=levels.map((l,i)=>l>=reqDraft?i:-1).filter(i=>i>=0).pop();
+    const tStart=bmMin+firstOk*30,tEnd=bmMin+lastOk*30;
+    const fmt=t=>`${String(Math.floor(t/60)%24).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+    const dur=(lastOk-firstOk)*30;
+    info.textContent=`✓ Fenêtre passable T=${reqDraft}m : ${fmt(tStart)} → ${fmt(tEnd)} (${Math.floor(dur/60)}h${dur%60?dur%60+'min':''}). Coef ${coef} · marnage ~${marnage.toFixed(1)}m`;
+  }
+}
+
+// ─── BASE TUGS — filtrée par port ───
+function buildTugDB(){
+  // Init select si besoin
+  const sel=document.getElementById('tug-port-sel');
+  if(sel&&sel.options.length===0){
+    PORTS.forEach(p=>{
+      if(TUGS_DB[p.id]){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);}
+    });
+  }
+  // Port sélectionné = port actif ou premier disponible
+  const portId=(sel?.value)||S.portId;
+  if(sel&&sel.value!==portId)sel.value=portId;
+  const el=document.getElementById('tug-db');if(!el)return;
+  const tugs=TUGS_DB[portId];
+  if(!tugs||tugs.length===0){el.innerHTML='<div style="color:var(--muted);font-size:11px;padding:8px">Aucun remorqueur référencé pour ce port.</div>';return;}
+  const port=PORTS.find(p=>p.id===portId);
+  // Stats
+  const maxBP=Math.max(...tugs.map(t=>t.bp));
+  const avgBP=Math.round(tugs.reduce((s,t)=>s+t.bp,0)/tugs.length);
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="background:rgba(255,140,66,0.06);border:1px solid rgba(255,140,66,0.15);border-radius:7px;padding:8px;text-align:center">
+        <div style="font-family:monospace;font-size:18px;font-weight:700;color:var(--orange)">${tugs.length}</div>
+        <div style="font-size:8px;color:var(--muted);text-transform:uppercase">Remorqueurs</div>
+      </div>
+      <div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:7px;padding:8px;text-align:center">
+        <div style="font-family:monospace;font-size:18px;font-weight:700;color:var(--cyan)">${maxBP}t</div>
+        <div style="font-size:8px;color:var(--muted);text-transform:uppercase">BP max</div>
+      </div>
+      <div style="background:rgba(46,213,115,0.05);border:1px solid rgba(46,213,115,0.15);border-radius:7px;padding:8px;text-align:center">
+        <div style="font-family:monospace;font-size:18px;font-weight:700;color:var(--green)">${avgBP}t</div>
+        <div style="font-size:8px;color:var(--muted);text-transform:uppercase">BP moyen</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+    ${tugs.map(t=>{
+      const typeCol=t.type==='ASD'?'var(--cyan)':t.type==='Voith'?'var(--purple)':t.type==='AHTS'?'var(--red)':'rgba(255,255,255,0.4)';
+      const barW=Math.round(t.bp/maxBP*100);
+      return `<div style="padding:9px 12px;border-radius:8px;background:rgba(255,255,255,0.025);border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div>
+            <span style="font-size:12px;font-weight:600;color:#dde8f2">${t.name}</span>
+            <span style="font-size:9px;padding:1px 6px;border-radius:4px;background:${typeCol}18;color:${typeCol};margin-left:6px">${t.type}</span>
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:10px">
+            <span style="font-family:monospace;font-size:15px;font-weight:700;color:var(--orange)">${t.bp}t</span>
+            <span style="font-size:9px;color:var(--muted);margin-left:4px">≈${t.hp.toLocaleString()} ch</span>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:5px">${t.company} · ${t.year}${t.note?` · <span style="color:var(--orange)">${t.note}</span>`:''}</div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px">
+          <div style="width:${barW}%;height:100%;background:linear-gradient(90deg,rgba(255,140,66,0.4),rgba(255,140,66,0.8));border-radius:2px"></div>
+        </div>
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+// ─── CARTE LEAFLET — OSM + OPENSEAMAP ───
+let leafMap=null,seaLayer=null,seaVisible=true;
+function initMap(){
+  const port=getPort();if(!port)return;
+  const el=document.getElementById('port-map');if(!el)return;
+  if(typeof L==='undefined'){
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:11px">Chargement de la carte…</div>';
+    return;
+  }
+  if(leafMap){leafMap.remove();leafMap=null;}
+  leafMap=L.map('port-map',{zoomControl:true,attributionControl:true}).setView([port.lat,port.lng],port.mapZoom||13);
+  // Fond OSM standard (rendu proche du screenshot)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom:19,opacity:1.0
+  }).addTo(leafMap);
+  // Couche séamarks OpenSeaMap (bouées, feux, amers, IALA — exactement comme le screenshot)
+  seaLayer=L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://www.openseamap.org">OpenSeaMap</a>',
+    maxZoom:19,opacity:1.0
+  }).addTo(leafMap);
+  // Marqueurs quais avec popups
+  const icons={};
+  const makeIcon=(color,sel)=>L.divIcon({
+    className:'',
+    html:`<div style="width:${sel?14:10}px;height:${sel?14:10}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 ${sel?10:4}px ${color};cursor:pointer"></div>`,
+    iconAnchor:[sel?7:5,sel?7:5]
+  });
+  const typeColor={container:'#00d4ff',tanker:'#ff8c42',lng:'#a78bfa',bulkcarrier:'#ffa502',ropax:'#2ed573',cruise:'#ff4757'};
+  port.berths.forEach(b=>{
+    const sel=b.id===S.berthId;
+    const col=typeColor[b.type]||'#aaa';
+    const m=L.marker([port.lat+((b.py-0.5)*0.055),port.lng+((b.px-0.5)*0.075)],{icon:makeIcon(col,sel)}).addTo(leafMap);
+    m.bindPopup(`<b>${b.name}</b><br>Cap: ${b.hdg}° · Draft max: ${b.draft}m · LOA max: ${b.loa}m<br><i style="color:rgba(200,210,220,.7)">${b.note}</i>`);
+    m.on('click',()=>{selBerth(b.id);});
+  });
+  // Lien plein écran
+  const extLink=document.getElementById('map-ext-link');
+  if(extLink)extLink.href=`https://www.openstreetmap.org/?mlat=${port.lat}&mlon=${port.lng}#map=${port.mapZoom||13}/${port.lat}/${port.lng}&layers=S`;
+}
+function toggleSeamarks(){
+  const btn=document.getElementById('btn-sea');
+  if(!seaLayer||!leafMap)return;
+  seaVisible=!seaVisible;
+  if(seaVisible){seaLayer.addTo(leafMap);if(btn){btn.style.background='rgba(0,212,255,0.1)';btn.style.color='var(--cyan)';btn.textContent='⚓ Séamarks ON';}}
+  else{seaLayer.remove();if(btn){btn.style.background='rgba(255,255,255,0.04)';btn.style.color='var(--muted)';btn.textContent='⚓ Séamarks OFF';}}
+}
+
+
+// ─── UI PORTS / BERTHS ───
+function buildPortSel(){
+  const cont=document.getElementById('port-sel');
+  const grps=[
+    {l:"🌊 Méditerranée",ids:["marseille","sete"]},
+    {l:"🌊 Manche / Mer du Nord",ids:["lehavre","rouen","dunkerque"]},
+    {l:"🌊 Atlantique",ids:["brest","nantes_saint_nazaire","bordeaux"]},
+  ];
+  cont.innerHTML='';
+  grps.forEach(grp=>{
+    const rl=document.createElement('div');rl.className='preg';rl.textContent=grp.l;cont.appendChild(rl);
+    const grid=document.createElement('div');grid.className='pgrid';
+    PORTS.filter(p=>grp.ids.includes(p.id)).forEach(p=>{
+      const b=document.createElement('button');b.className='pbtn'+(p.id===S.portId?' on':'');b.textContent=p.name;
+      b.onclick=()=>{S.portId=p.id;S.berthId=null;document.querySelectorAll('.pbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+        buildPortInfo();buildBerthList();updPortInd();
+        const pn=document.getElementById('wx-pname');if(pn)pn.textContent=` · ${p.name}`;
+        loadWxOM();updAngles();updSum();
+        if(document.getElementById('panel-port').classList.contains('on'))initMap();
+        // mise à jour selects
+        const tds=document.getElementById('td-port');if(tds)tds.value=p.id;calcTidal();
+        const tps=document.getElementById('tug-port-sel');if(tps)tps.value=p.id;
+      };
+      grid.appendChild(b);
+    });
+    cont.appendChild(grid);
+  });
+  buildPortInfo();buildBerthList();
+  const port=getPort();if(port){const pn=document.getElementById('wx-pname');if(pn)pn.textContent=` · ${port.name}`;}
+}
+function buildPortInfo(){
+  const port=getPort();const el=document.getElementById('port-geo');
+  if(!port){el.innerHTML='';return;}
+  el.innerHTML=`<div class="geo-box"><div class="geo-t">Données géographiques</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;font-size:9px;color:var(--muted)">
+      <div><span style="color:#a78bfa">◇ ${port.dWind.name}</span><br>${port.dWind.dir}° / ${port.dWind.spd}kt — ×${port.boost}</div>
+      <div><span style="color:#34d399">〰 Tidal</span><br>${port.tidal.spd}kt axe ${port.tidal.axis}° / chenal ${port.cAxis}°</div>
+      <div style="font-size:8px;line-height:1.4;color:rgba(255,255,255,0.26)">${port.note}</div>
+    </div></div>`;
+}
+function buildBerthList(){
+  const port=getPort();const el=document.getElementById('berth-list');const info=document.getElementById('berth-info');
+  if(!port){el.innerHTML='';info.innerHTML='';return;}
+  let html=`<div class="lbl" style="margin-bottom:4px">Quai / Terminal (${port.berths.length})</div><div class="bl">`;
+  port.berths.forEach(b=>{
+    const vt=VTYPES.find(v=>v.id===b.type),pc=PCONDS.find(c=>c.id===b.cond);
+    const blk=quickChk(b)>0,act=b.id===S.berthId;
+    html+=`<button class="bb${act?' on':''}${blk?' blk':''}" onclick="selBerth('${b.id}')">
+      <div style="display:flex;gap:7px;align-items:center">
+        <span style="font-size:13px">${vt?.ic||'▪'}</span>
+        <div><div style="font-size:11px;color:${act?'var(--cyan)':blk?'rgba(255,71,87,.7)':'#dde8f2'};font-weight:500">${b.name}${blk?' 🚫':''}</div>
+          <div style="font-size:8px;color:var(--muted)">Cap ${b.hdg}° · Tir. max ${b.draft}m · LOA max ${b.loa}m · Fond ~${b.d}m</div></div>
+      </div>
+      <span style="font-size:8px;color:var(--dim);background:rgba(255,255,255,0.04);padding:2px 5px;border-radius:3px;white-space:nowrap">${pc?.ic||''} ${pc?.l||''}</span>
+    </button>`;
+  });
+  el.innerHTML=html+'</div>';
+  updBerthInfo();updCompat();
+}
+function quickChk(b){let n=0;const loa=fv('f-loa'),draft=fv('f-draft'),beam=fv('f-beam');if(loa>b.loa)n++;if(draft>b.draft)n++;if(beam>b.beam)n++;return n;}
+function getCompat(berth){
+  if(!berth)return[];const a=[];
+  const loa=fv('f-loa'),draft=fv('f-draft'),beam=fv('f-beam');
+  if(loa>berth.loa)a.push({lv:"block",f:"LOA",t:`${loa}m > max ${berth.loa}m`});
+  if(draft>berth.draft)a.push({lv:"block",f:"Tirant",t:`${draft}m > max ${berth.draft}m`});
+  if(beam>berth.beam)a.push({lv:"block",f:"Largeur",t:`${beam}m > max ${berth.beam}m`});
+  const ok={container:["container"],tanker:["tanker"],lng:["lng"],bulkcarrier:["bulkcarrier","tanker"],ropax:["ropax","cruise"],cruise:["cruise","ropax"]};
+  if(!(ok[S.vesselType]||[]).includes(berth.type))a.push({lv:"warn",f:"Type",t:`Quai ${berth.type} — navire ${S.vesselType}`});
+  return a;
+}
+function selBerth(id){
+  S.berthId=id;const berth=getBerth();
+  if(berth){S.heading=berth.hdg;S.portCondition=berth.cond;
+    document.getElementById('hdg').value=berth.hdg;
+    document.getElementById('hdg-l').textContent=dirLabel(berth.hdg);
+    drawCmp('cmp-h',berth.hdg,'#00d4ff');
+    document.querySelectorAll('#pcond .sb').forEach((b,i)=>b.classList.toggle('on',PCONDS[i].id===berth.cond));
+  }
+  buildBerthList();updBerthInfo();updCompat();updBar();updSum();
+  if(leafMap)initMap();
+}
+function updBerthInfo(){
+  const berth=getBerth();const el=document.getElementById('berth-info');
+  if(!berth){el.innerHTML='';return;}
+  const pc=PCONDS.find(c=>c.id===berth.cond);
+  el.innerHTML=`<div class="ibox">✓ ${berth.name} · cap ${berth.hdg}° · ${pc?.l||''} · fond ~${berth.d}m<br><span style="opacity:.6">${berth.note}</span></div>`;
+}
+function updCompat(){
+  const berth=getBerth();const alerts=berth?getCompat(berth):[];
+  ['ca1','ca2'].forEach(id=>{const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=alerts.map(a=>`<div class="alrt ${a.lv==='block'?'ab':'aw'}">
+      <span style="font-size:13px">${a.lv==='block'?'🚫':'⚠️'}</span>
+      <div><div style="font-size:9px;font-weight:700;color:${a.lv==='block'?'var(--red)':'var(--orange)'};margin-bottom:1px">${a.f}</div>
+      <div style="font-size:11px;color:var(--muted)">${a.t}</div></div></div>`).join('');
+  });
+  updBar();
+}
+function updBar(){
+  const blocked=(getBerth()?getCompat(getBerth()):[]).some(a=>a.lv==='block');
+  const btn=document.getElementById('cbtn');const sum=document.getElementById('cbar-sum');if(!btn||!sum)return;
+  btn.disabled=blocked;
+  btn.style.background=blocked?"rgba(255,71,87,0.17)":"linear-gradient(135deg,#004d74,#00c4eb)";
+  btn.style.color=blocked?"rgba(255,71,87,0.5)":"#fff";
+  btn.textContent=blocked?"🚫 Incompatibilité navire/quai":"⚡ Calculer la manœuvre";
+  const port=getPort(),berth=getBerth(),vt=VTYPES.find(v=>v.id===S.vesselType);
+  sum.textContent=blocked?"Corrigez les incompatibilités":`${vt?.ic||''} ${fv('f-loa')||250}m · ${port?.name||'—'}${berth?` → ${berth.name}`:''} · ${S.windKt}kt/${S.windDir}°`;
+}
+function updPortInd(){const port=getPort(),berth=getBerth();const el=document.getElementById('port-ind');if(el)el.textContent=port?(port.name+(berth?` → ${berth.name}`:'')):' ';}
+function updEng(){
+  const kw=fv('f-engine');
+  const el=document.getElementById('eng-hp');
+  if(el)el.textContent=`≈ ${Math.round(kw*1.341).toLocaleString()} ch`;
+  // Re-estimer les paramètres modèle B si pas encore saisis manuellement
+  const htotSrc=document.getElementById('htot-src');
+  if(htotSrc&&htotSrc.textContent==='estimée'){
+    const est=estimateModelB(S.vesselType,fv('f-loa'),fv('f-beam'),fv('f-draft'),fv('f-dwt'),kw);
+    const he=document.getElementById('f-htot');if(he)he.value=est.H_total;
+    const ee=document.getElementById('f-etrave');if(ee)ee.value=est.kw_etrave;
+    const pe=document.getElementById('f-poupe');if(pe)pe.value=est.kw_poupe;
+  }
+}
+function onDim(){
+  updCompat();buildBerthList();
+  // Re-estimer si estimée
+  const htotSrc=document.getElementById('htot-src');
+  if(htotSrc&&htotSrc.textContent==='estimée'){
+    const est=estimateModelB(S.vesselType,fv('f-loa'),fv('f-beam'),fv('f-draft'),fv('f-dwt'),fv('f-engine'));
+    const he=document.getElementById('f-htot');if(he)he.value=est.H_total;
+    const ee=document.getElementById('f-etrave');if(ee)ee.value=est.kw_etrave;
+    const pe=document.getElementById('f-poupe');if(pe)pe.value=est.kw_poupe;
+  }
+}
+function showTab(t){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('panel-'+t).classList.add('on');
+  const idx=['vessel','port','meteo','tools'].indexOf(t);
+  document.querySelectorAll('.tab')[idx]?.classList.add('on');
+  if(t==='port')setTimeout(initMap,100);
+  if(t==='tools'){
+    const tps=document.getElementById('tug-port-sel');
+    if(tps&&tps.value!==S.portId)tps.value=S.portId;
+    calcSquat();calcTidal();buildTugDB();
+  }
+}
+
+// ══════════════════════════════════════════════════
+// CANVAS MANŒUVRE — trajectoire Bézier réaliste
+// ══════════════════════════════════════════════════
+function setLayer(l){
+  curLayer=l;
+  document.querySelectorAll('.lbtn').forEach(b=>b.classList.toggle('on',
+    (l==='map'&&b.textContent.includes('Carte'))||
+    (l==='depth'&&b.textContent.includes('Profondeur'))||
+    (l==='current'&&b.textContent.includes('Courant'))||
+    (l==='wind'&&b.textContent.includes('Vent'))));
+}
+
+// ── SCHÉMA DE MANŒUVRE — Canvas vectoriel (pas de dépendance réseau) ──
+// ── Carte de manœuvre Leaflet ──
+let mnvMap=null, mnvSeaLayer=null, mnvSeaOn=true;
+let mnvOverlayLayer=null; // canvas overlay pour trajectoire/forces/tugs
+
+function toggleMnvSeamarks(){
+  if(!mnvMap||!mnvSeaLayer)return;
+  mnvSeaOn=!mnvSeaOn;
+  const btn=document.getElementById('mnv-sea-btn');
+  if(mnvSeaOn){mnvSeaLayer.addTo(mnvMap);if(btn){btn.style.background='rgba(0,212,255,0.1)';btn.style.color='var(--cyan)';btn.textContent='⚓ Séamarks ON';}}
+  else{mnvMap.removeLayer(mnvSeaLayer);if(btn){btn.style.background='transparent';btn.style.color='var(--muted)';btn.textContent='⚓ Séamarks OFF';}}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BERTH_ROUTES — waypoints de chenal réels par berth (ENTRÉE)
+// Tracés manuellement le long des chenaux balisés, évitant terres
+// et infrastructures. Pour SORTIE : ordre inversé automatiquement.
+// Format : [{lat, lng, label?}]  (premier = rade/bouée, dernier = quai)
+// ══════════════════════════════════════════════════════════════════
+const BERTH_ROUTES = {
+
+  // ─── MARSEILLE-FOS ─────────────────────────────────────────────
+  // Fos Eurofos Darse 2 : entrée golfe → chenal Fos → darse 2 W
+  fos_cont:[
+    {lat:43.3700,lng:4.9200,label:"Rade de Fos"},
+    {lat:43.3780,lng:4.8950,label:"Bouée Fos N"},
+    {lat:43.3900,lng:4.8620,label:"Chenal Fos"},
+    {lat:43.4000,lng:4.8380,label:"Embouchure Darse 2"},
+    {lat:43.4095,lng:4.8250,label:"Darse 2 W"},
+    {lat:43.4135,lng:4.8155,label:"Quai Eurofos"},
+  ],
+  // Fos Distriport : entrée golfe → chenal Fos → Darse 1 → Distriport E
+  fos_dis:[
+    {lat:43.3700,lng:4.9200,label:"Rade de Fos"},
+    {lat:43.3780,lng:4.8950,label:"Bouée Fos N"},
+    {lat:43.3960,lng:4.8900,label:"Chenal Darse 1"},
+    {lat:43.4050,lng:4.8920,label:"Entrée Darse 1"},
+    {lat:43.4150,lng:4.8960,label:"Axe Distriport"},
+    {lat:43.4195,lng:4.9015,label:"Quai Distriport"},
+  ],
+  // Lavéra : rade Fos → passe Lavéra
+  fos_oil:[
+    {lat:43.3700,lng:4.9200,label:"Rade de Fos"},
+    {lat:43.3780,lng:4.9800,label:"Chenal Lavéra"},
+    {lat:43.3870,lng:5.0050,label:"Approche Lavéra"},
+    {lat:43.3960,lng:5.0224,label:"Quai Lavéra"},
+  ],
+  // Cavaou LNG : rade Fos → chenal N → Cavaou
+  fos_lng:[
+    {lat:43.3700,lng:4.9200,label:"Rade de Fos"},
+    {lat:43.3780,lng:4.8950,label:"Bouée Fos N"},
+    {lat:43.3960,lng:4.8900,label:"Chenal Cavaou"},
+    {lat:43.4080,lng:4.8880,label:"Approche Cavaou"},
+    {lat:43.4190,lng:4.8940,label:"Entrée Cavaou"},
+    {lat:43.4255,lng:4.8972,label:"Terminal Cavaou"},
+  ],
+  // Roro Darse 3 : rade → darse 3
+  fos_roro:[
+    {lat:43.3700,lng:4.9200,label:"Rade de Fos"},
+    {lat:43.3780,lng:4.8950,label:"Bouée Fos N"},
+    {lat:43.3900,lng:4.8620,label:"Chenal Fos"},
+    {lat:43.4000,lng:4.8460,label:"Approche Darse 3"},
+    {lat:43.4095,lng:4.8340,label:"Quai Roro"},
+  ],
+  // Mourepiane : rade Marseille → passe N → bassin Nord
+  mourepiane:[
+    {lat:43.3100,lng:5.3600,label:"Rade Marseille"},
+    {lat:43.3250,lng:5.3520,label:"Chenal N"},
+    {lat:43.3480,lng:5.3498,label:"Entrée bassin Nord"},
+    {lat:43.3615,lng:5.3490,label:"Mourepiane"},
+  ],
+  // Joliette : rade Marseille → avant-port N → Joliette
+  joliette:[
+    {lat:43.3100,lng:5.3600,label:"Rade Marseille"},
+    {lat:43.3200,lng:5.3540,label:"Avant-port"},
+    {lat:43.3350,lng:5.3490,label:"Chenal Joliette"},
+    {lat:43.3478,lng:5.3468,label:"Joliette"},
+  ],
+  // Arenc : rade → avant-port S → Arenc
+  arenc:[
+    {lat:43.3100,lng:5.3600,label:"Rade Marseille"},
+    {lat:43.3200,lng:5.3540,label:"Avant-port"},
+    {lat:43.3400,lng:5.3510,label:"Chenal Arenc"},
+    {lat:43.3535,lng:5.3512,label:"Arenc"},
+  ],
+
+  // ─── SÈTE ──────────────────────────────────────────────────────
+  // Tous les quais de Sète : entrée par passe S → chenal principal
+  sete_vrac1:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.3995,lng:3.6960,label:"Virage W"},
+    {lat:43.4020,lng:3.6940,label:"Quai Crète approche"},
+    {lat:43.4055,lng:3.6925,label:"Quai Crète"},
+  ],
+  sete_vrac2:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.4000,lng:3.6988,label:"Virage bassin"},
+    {lat:43.4048,lng:3.6985,label:"Quai Général"},
+  ],
+  sete_petro1:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.4000,lng:3.7030,label:"Chenal E"},
+    {lat:43.4040,lng:3.7065,label:"Terminal Pétrolier N"},
+  ],
+  sete_petro2:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.4000,lng:3.7080,label:"Chenal E"},
+    {lat:43.4022,lng:3.7175,label:"Hydrocarbures E"},
+  ],
+  sete_engrais:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.4000,lng:3.7010,label:"Virage"},
+    {lat:43.4025,lng:3.7030,label:"Quai Engrais"},
+  ],
+  sete_ferry:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3920,lng:3.6995,label:"Approche ferries"},
+    {lat:43.3982,lng:3.7012,label:"Terminal Ferries"},
+  ],
+  sete_cruise:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3820,lng:3.6970,label:"Chenal W"},
+    {lat:43.3920,lng:3.6950,label:"Approche Môle"},
+    {lat:43.3975,lng:3.6942,label:"Môle Saint-Louis"},
+  ],
+  sete_cont:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.3975,lng:3.7060,label:"Chenal E"},
+    {lat:43.3980,lng:3.7115,label:"Alcyone"},
+  ],
+  sete_bois:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3850,lng:3.6988,label:"Chenal S"},
+    {lat:43.3960,lng:3.6988,label:"Chenal principal"},
+    {lat:43.3995,lng:3.7050,label:"Chenal E"},
+    {lat:43.4028,lng:3.7098,label:"Quai Fraternité"},
+  ],
+  sete_peche:[
+    {lat:43.3720,lng:3.6988,label:"Passe S"},
+    {lat:43.3820,lng:3.6970,label:"Chenal W"},
+    {lat:43.3950,lng:3.6940,label:"Approche pêche"},
+    {lat:43.4010,lng:3.6928,label:"Quai Maroc"},
+  ],
+
+  // ─── LE HAVRE ──────────────────────────────────────────────────
+  // Port 2000 : LH1 → passe → Port 2000
+  tdf_a:[
+    {lat:49.4580,lng:0.0100,label:"Bouée LH1"},
+    {lat:49.4620,lng:0.0380,label:"Chenal principal"},
+    {lat:49.4680,lng:0.0580,label:"Digue N Port 2000"},
+    {lat:49.4745,lng:0.0685,label:"Port 2000"},
+  ],
+  // Antifer : offshore → chenal Antifer
+  antifer:[
+    {lat:49.6600,lng:0.1200,label:"Bouée Antifer W"},
+    {lat:49.6500,lng:0.1400,label:"Chenal Antifer"},
+    {lat:49.6420,lng:0.1580,label:"Approche Antifer"},
+    {lat:49.6385,lng:0.1645,label:"Port Antifer"},
+  ],
+  // Vauban ferries : chenal → bassins → Vauban
+  roro_havre:[
+    {lat:49.4580,lng:0.0100,label:"Bouée LH1"},
+    {lat:49.4640,lng:0.0580,label:"Chenal principal"},
+    {lat:49.4720,lng:0.0820,label:"Avant-port"},
+    {lat:49.4820,lng:0.0980,label:"Ecluse Vauban"},
+    {lat:49.4920,lng:0.1045,label:"Bassin Vauban"},
+  ],
+  cruise_h:[
+    {lat:49.4580,lng:0.0100,label:"Bouée LH1"},
+    {lat:49.4640,lng:0.0580,label:"Chenal principal"},
+    {lat:49.4720,lng:0.0820,label:"Avant-port"},
+    {lat:49.4780,lng:0.0980,label:"Chenal Eure"},
+    {lat:49.4862,lng:0.1042,label:"Bassin Eure"},
+  ],
+  grdbras:[
+    {lat:49.4580,lng:0.0100,label:"Bouée LH1"},
+    {lat:49.4640,lng:0.0580,label:"Chenal principal"},
+    {lat:49.4720,lng:0.0820,label:"Avant-port"},
+    {lat:49.4800,lng:0.1020,label:"Chenal Grand Bras"},
+    {lat:49.4875,lng:0.1068,label:"Grand Bras"},
+  ],
+
+  // ─── DUNKERQUE ─────────────────────────────────────────────────
+  // BDT conteneurs : bouée DW → passe W → écluse Trystram → BDT
+  bdt:[
+    {lat:51.0320,lng:2.2600,label:"Bouée DW"},
+    {lat:51.0360,lng:2.2900,label:"Chenal W"},
+    {lat:51.0400,lng:2.3100,label:"Avant-port W"},
+    {lat:51.0440,lng:2.3280,label:"Ecluse Trystram"},
+    {lat:51.0478,lng:2.3418,label:"BDT"},
+  ],
+  // ArcelorMittal : chenal E → bassin minéralier
+  minerais:[
+    {lat:51.0320,lng:2.2600,label:"Bouée DW"},
+    {lat:51.0360,lng:2.2900,label:"Chenal W"},
+    {lat:51.0400,lng:2.3200,label:"Avant-port"},
+    {lat:51.0460,lng:2.3480,label:"Chenal minéralier"},
+    {lat:51.0538,lng:2.3642,label:"ArcelorMittal"},
+  ],
+  // DKTM pétrolier : chenal E → bassin Ouest
+  dktm:[
+    {lat:51.0320,lng:2.2600,label:"Bouée DW"},
+    {lat:51.0360,lng:2.2900,label:"Chenal W"},
+    {lat:51.0400,lng:2.3200,label:"Avant-port"},
+    {lat:51.0480,lng:2.3600,label:"Chenal Ouest"},
+    {lat:51.0562,lng:2.3890,label:"DKTM"},
+  ],
+  // LNG Dunkerque : chenal côtier E
+  dkk_lng:[
+    {lat:51.0320,lng:2.2600,label:"Bouée DW"},
+    {lat:51.0340,lng:2.2900,label:"Chenal côtier"},
+    {lat:51.0350,lng:2.3200,label:"Approche LNG"},
+    {lat:51.0352,lng:2.3485,label:"Terminal LNG"},
+  ],
+  // DFDS/P&O ferries : avant-port E → ferry terminal
+  dkk_roro:[
+    {lat:51.0320,lng:2.2600,label:"Bouée DW"},
+    {lat:51.0360,lng:2.2900,label:"Chenal W"},
+    {lat:51.0370,lng:2.3300,label:"Avant-port E"},
+    {lat:51.0372,lng:2.3765,label:"Terminal Passagers"},
+  ],
+
+  // ─── ROUEN ─────────────────────────────────────────────────────
+  // Seine sinueuse : pilote Honfleur → remontée Seine jusqu'aux quais
+  grd_quai:[
+    {lat:49.4200,lng:0.2300,label:"Pilote Honfleur"},
+    {lat:49.4350,lng:0.4800,label:"Seine aval"},
+    {lat:49.4400,lng:0.7200,label:"Seine Caudebec"},
+    {lat:49.4500,lng:0.9200,label:"Seine Duclair"},
+    {lat:49.4480,lng:1.0400,label:"Seine Rouen aval"},
+    {lat:49.4452,lng:1.0892,label:"Grand Quai"},
+  ],
+  p_couronne:[
+    {lat:49.4200,lng:0.2300,label:"Pilote Honfleur"},
+    {lat:49.4350,lng:0.4800,label:"Seine aval"},
+    {lat:49.4400,lng:0.7200,label:"Seine Caudebec"},
+    {lat:49.4300,lng:0.9000,label:"Seine Petit-Couronne"},
+    {lat:49.4112,lng:1.0442,label:"Petit-Couronne"},
+  ],
+  rou_roro:[
+    {lat:49.4200,lng:0.2300,label:"Pilote Honfleur"},
+    {lat:49.4350,lng:0.4800,label:"Seine aval"},
+    {lat:49.4400,lng:0.7200,label:"Seine Caudebec"},
+    {lat:49.4420,lng:0.9500,label:"Seine Rouen"},
+    {lat:49.4358,lng:1.0722,label:"Sotrama Roro"},
+  ],
+
+  // ─── BREST ─────────────────────────────────────────────────────
+  // Goulet de Brest (3kt) → rade → commerce
+  laninon:[
+    {lat:48.3020,lng:-4.6800,label:"Bouée W Goulet"},
+    {lat:48.3180,lng:-4.6400,label:"Goulet"},
+    {lat:48.3380,lng:-4.5600,label:"Rade Brest"},
+    {lat:48.3620,lng:-4.5100,label:"Approche Commerce"},
+    {lat:48.3805,lng:-4.4918,label:"Laninon"},
+  ],
+  brest_petro:[
+    {lat:48.3020,lng:-4.6800,label:"Bouée W Goulet"},
+    {lat:48.3180,lng:-4.6400,label:"Goulet"},
+    {lat:48.3380,lng:-4.5600,label:"Rade Brest"},
+    {lat:48.3680,lng:-4.5000,label:"Approche pétrolier"},
+    {lat:48.3785,lng:-4.4872,label:"Quai Pétrolier"},
+  ],
+  brest_vrac:[
+    {lat:48.3020,lng:-4.6800,label:"Bouée W Goulet"},
+    {lat:48.3180,lng:-4.6400,label:"Goulet"},
+    {lat:48.3380,lng:-4.5600,label:"Rade Brest"},
+    {lat:48.3700,lng:-4.5050,label:"Approche vracs"},
+    {lat:48.3835,lng:-4.4895,label:"Port Commerce Vracs"},
+  ],
+
+  // ─── NANTES-SAINT-NAZAIRE ───────────────────────────────────────
+  // Estuaire Loire (60km remontée) : pointe de St-Gildas → quais
+  montoir_lng:[
+    {lat:47.1300,lng:-2.3200,label:"Pointe St-Gildas"},
+    {lat:47.1700,lng:-2.3000,label:"Chenal Loire aval"},
+    {lat:47.2200,lng:-2.2800,label:"Chenal Mindin"},
+    {lat:47.2600,lng:-2.2200,label:"Chenal St-Nazaire"},
+    {lat:47.2950,lng:-2.1800,label:"Approche Montoir"},
+    {lat:47.3182,lng:-2.1515,label:"Terminal LNG Montoir"},
+  ],
+  donges:[
+    {lat:47.1300,lng:-2.3200,label:"Pointe St-Gildas"},
+    {lat:47.1700,lng:-2.3000,label:"Chenal Loire aval"},
+    {lat:47.2200,lng:-2.2800,label:"Chenal Mindin"},
+    {lat:47.2700,lng:-2.1800,label:"Chenal Donges"},
+    {lat:47.3042,lng:-2.0760,label:"Donges Total"},
+  ],
+  chevire:[
+    {lat:47.1300,lng:-2.3200,label:"Pointe St-Gildas"},
+    {lat:47.1700,lng:-2.3000,label:"Chenal Loire aval"},
+    {lat:47.2200,lng:-2.2800,label:"Chenal Mindin"},
+    {lat:47.2350,lng:-2.1000,label:"Chenal Nantes"},
+    {lat:47.2198,lng:-1.6138,label:"Cheviré Nantes"},
+  ],
+  stnaz_pen:[
+    {lat:47.1300,lng:-2.3200,label:"Pointe St-Gildas"},
+    {lat:47.1700,lng:-2.3000,label:"Chenal Loire aval"},
+    {lat:47.2200,lng:-2.2800,label:"Chenal Mindin"},
+    {lat:47.2600,lng:-2.2300,label:"Approche St-Nazaire"},
+    {lat:47.2748,lng:-2.2065,label:"Penhoët STX"},
+  ],
+
+  // ─── BORDEAUX-GIRONDE ───────────────────────────────────────────
+  // Gironde (90km) : pointe de Grave → remontée → quais
+  bassens_nord:[
+    {lat:45.5600,lng:-1.0700,label:"Pointe de Grave"},
+    {lat:45.4500,lng:-0.9200,label:"Gironde aval"},
+    {lat:45.3200,lng:-0.7800,label:"Gironde Blaye"},
+    {lat:45.1000,lng:-0.6200,label:"Garonne"},
+    {lat:44.8938,lng:-0.5118,label:"Bassens Nord"},
+  ],
+  bassens_sud:[
+    {lat:45.5600,lng:-1.0700,label:"Pointe de Grave"},
+    {lat:45.4500,lng:-0.9200,label:"Gironde aval"},
+    {lat:45.3200,lng:-0.7800,label:"Gironde Blaye"},
+    {lat:45.1000,lng:-0.6200,label:"Garonne"},
+    {lat:44.8862,lng:-0.5142,label:"Bassens Sud"},
+  ],
+  bx_ville:[
+    {lat:45.5600,lng:-1.0700,label:"Pointe de Grave"},
+    {lat:45.4500,lng:-0.9200,label:"Gironde aval"},
+    {lat:45.3200,lng:-0.7800,label:"Gironde Blaye"},
+    {lat:45.1000,lng:-0.6200,label:"Garonne amont"},
+    {lat:44.8438,lng:-0.5608,label:"Bordeaux Quais"},
+  ],
+  verdon:[
+    {lat:45.5800,lng:-1.1200,label:"Rade Verdon"},
+    {lat:45.5402,lng:-1.0618,label:"Le Verdon"},
+  ],
+};
+
+function startAnim(res){
+  const el=document.getElementById('mc');
+  if(!el)return;
+
+  // Leaflet pas encore chargé → réessayer toutes les 200ms max 15 fois (~3s)
+  if(typeof L==='undefined'){
+    if(!startAnim._retry)startAnim._retry=0;
+    if(startAnim._retry++<15){setTimeout(()=>startAnim(res),200);return;}
+    startAnim._retry=0;
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(0,212,255,0.5);font-family:monospace;font-size:11px;">Carte indisponible — connexion réseau requise</div>';
+    return;
+  }
+  startAnim._retry=0;
+
+  const port=getPort();
+  const berth=getBerth();
+
+  // ── Nettoyage ──
+  if(mnvMap){try{mnvMap.remove();}catch(e){}mnvMap=null;mnvSeaLayer=null;}
+  el.innerHTML='';
+  // Forcer hauteur explicite AVANT l'init Leaflet
+  el.style.height='380px';
+  el.style.minHeight='380px';
+
+  // ── Coordonnées de référence ──
+  const bLat = berth?.lat || port?.lat || 48.8566;
+  const bLng = berth?.lng || port?.lng || 2.3522;
+
+  // Route de chenal : BERTH_ROUTES[berthId] ou fallback port centre
+  const route = (berth && BERTH_ROUTES[berth.id]) ? BERTH_ROUTES[berth.id] : null;
+  const ePt = route ? route[0] : null; // premier point = bouée/entrée rade
+  const eLat = ePt?.lat ?? bLat;
+  const eLng = ePt?.lng ?? bLng;
+
+  // Centre initial = milieu de la route complète
+  const allLats = route ? route.map(p=>p.lat) : [bLat];
+  const allLngs = route ? route.map(p=>p.lng) : [bLng];
+  const cLat = (Math.min(...allLats)+Math.max(...allLats))/2;
+  const cLng = (Math.min(...allLngs)+Math.max(...allLngs))/2;
+  const distDeg = Math.sqrt((Math.max(...allLats)-Math.min(...allLats))**2+(Math.max(...allLngs)-Math.min(...allLngs))**2);
+  const zoom = distDeg>1.5?9 : distDeg>0.6?10 : distDeg>0.2?11 : distDeg>0.06?12 : 13;
+
+  // ── Init Leaflet ──
+  mnvMap = L.map(el, {
+    zoomControl:true, attributionControl:true,
+    fadeAnimation:true, zoomAnimation:true
+  }).setView([cLat, cLng], zoom);
+
+  // Tuiles OpenStreetMap — vraie carte couleurs naturelles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19, opacity:1,
+    attribution:'© <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a>'
+  }).addTo(mnvMap);
+
+  // OpenSeaMap séamarks par-dessus
+  mnvSeaLayer=L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',{
+    maxZoom:19, opacity:0.85,
+    attribution:'© <a href="https://openseamap.org" target="_blank">OpenSeaMap</a>'
+  });
+  if(mnvSeaOn) mnvSeaLayer.addTo(mnvMap);
+
+  const btn=document.getElementById('mnv-sea-btn');
+  if(btn){btn.style.opacity='1';btn.textContent=mnvSeaOn?'⚓ Séamarks ON':'⚓ Séamarks OFF';}
+
+  const typeColor={container:'#0ea5e9',tanker:'#f97316',lng:'#a78bfa',bulkcarrier:'#eab308',ropax:'#22c55e',cruise:'#ef4444'};
+  const bCol = typeColor[berth?.type||'container'];
+
+  if(berth?.lat && berth?.lng){
+    // ── Marqueur quai cible ──
+    L.marker([bLat,bLng], {icon:L.divIcon({
+      className:'',
+      html:`<div style="width:18px;height:18px;border-radius:50%;background:${bCol};border:3px solid white;box-shadow:0 0 10px ${bCol};"></div>`,
+      iconSize:[18,18], iconAnchor:[9,9]
+    }), zIndexOffset:1000}).addTo(mnvMap)
+      .bindPopup(`<b>${berth.name}</b><br>LOA max ${berth.loa}m · Tirant −${berth.d}m<br><i>${berth.note||''}</i>`);
+
+    // ── Marqueur bouée d'atterrissage (premier waypoint) ──
+    if(ePt){
+      L.marker([eLat,eLng], {icon:L.divIcon({
+        className:'',
+        html:`<div style="width:13px;height:13px;border-radius:50%;background:#22c55e;border:2px solid white;box-shadow:0 0 6px #22c55e;"></div>`,
+        iconSize:[13,13], iconAnchor:[6,6]
+      })}).addTo(mnvMap).bindPopup(`<b>Prise en charge pilote</b><br>${ePt.label}`);
+    }
+
+    // ── Waypoints intermédiaires (marqueurs petits) ──
+    if(route && route.length>2){
+      route.slice(1,-1).forEach(wp=>{
+        L.marker([wp.lat,wp.lng],{icon:L.divIcon({
+          className:'',
+          html:`<div style="width:7px;height:7px;border-radius:50%;background:#38bdf8;border:1.5px solid white;opacity:0.8;"></div>`,
+          iconSize:[7,7],iconAnchor:[3,3]
+        }),interactive:false}).addTo(mnvMap);
+      });
+    }
+
+    // ── Autres quais du port ──
+    port?.berths?.forEach(b=>{
+      if(!b.lat||!b.lng||b.id===berth.id)return;
+      L.marker([b.lat,b.lng], {icon:L.divIcon({
+        className:'',
+        html:`<div style="width:8px;height:8px;border-radius:50%;background:${typeColor[b.type]||'#888'};border:1.5px solid rgba(255,255,255,0.5);opacity:0.75;"></div>`,
+        iconSize:[8,8], iconAnchor:[4,4]
+      })}).addTo(mnvMap).bindPopup(`<b>${b.name}</b><br>${b.type} · −${b.d}m`);
+    });
+
+    // ── Trajectoire : polyline suivant les waypoints du chenal ──
+    if(route && route.length>=2){
+      const pts = route.map(p=>[p.lat,p.lng]);
+      const traj = S.maneuverType==='exit' ? [...pts].reverse() : pts;
+      // Ligne principale
+      L.polyline(traj,{color:'#38bdf8',weight:3,dashArray:'10 6',opacity:0.85}).addTo(mnvMap);
+      // Flèches directionnelles (tous les ~3 segments)
+      const step = Math.max(1,Math.floor(traj.length/4));
+      for(let i=step;i<traj.length-1;i+=step){
+        const a=Math.atan2(traj[i+1][0]-traj[i][0], traj[i+1][1]-traj[i][1])*180/Math.PI;
+        const m=[(traj[i][0]+traj[i+1][0])/2,(traj[i][1]+traj[i+1][1])/2];
+        L.marker(m,{interactive:false,icon:L.divIcon({
+          className:'',
+          html:`<div style="font-size:13px;color:rgba(56,189,248,0.9);transform:rotate(${a-90}deg);line-height:1;text-shadow:0 0 4px white;">▶</div>`,
+          iconSize:[13,13],iconAnchor:[6,6]
+        })}).addTo(mnvMap);
+      }
+    }
+
+    // ── Vecteurs forces (depuis le quai) ──
+    const windKt=parseFloat(res.effW)||0;
+    const currKt=parseFloat(res.effCs)||0;
+    // Longueur ~400m à l'échelle de la carte
+    const wScale=0.0035/Math.max(windKt,1), cScale=0.0035/Math.max(currKt,0.1);
+    if(windKt>3){
+      const wd=S.windDir*Math.PI/180;
+      const wLat=bLat+Math.sin(wd)*windKt*wScale*0.5, wLng=bLng+Math.cos(wd)*windKt*wScale*0.5;
+      L.polyline([[bLat,bLng],[wLat,wLng]],{color:'#a78bfa',weight:3,opacity:0.9}).addTo(mnvMap);
+      L.marker([wLat,wLng],{interactive:false,icon:L.divIcon({
+        className:'',
+        html:`<div style="background:rgba(15,10,30,0.85);color:#a78bfa;font-family:monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid #a78bfa55;white-space:nowrap;">💨 ${windKt}kt</div>`,
+        iconSize:[70,20],iconAnchor:[2,10]
+      })}).addTo(mnvMap);
+    }
+    if(currKt>0.1){
+      const cd=(parseFloat(res.effCd)||0)*Math.PI/180;
+      const cLat2=bLat+Math.sin(cd)*currKt*cScale*0.5, cLng2=bLng+Math.cos(cd)*currKt*cScale*0.5;
+      L.polyline([[bLat,bLng],[cLat2,cLng2]],{color:'#34d399',weight:3,opacity:0.9}).addTo(mnvMap);
+      L.marker([cLat2,cLng2],{interactive:false,icon:L.divIcon({
+        className:'',
+        html:`<div style="background:rgba(5,20,15,0.85);color:#34d399;font-family:monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid #34d39955;white-space:nowrap;">🌊 ${currKt}kt</div>`,
+        iconSize:[70,20],iconAnchor:[2,10]
+      })}).addTo(mnvMap);
+    }
+
+    // ── Remorqueurs ──
+    const hdgRad=(berth.hdg||0)*Math.PI/180;
+    const tOff=0.00040, tSide=0.00020;
+    for(let i=0;i<res.fwd;i++){
+      const s=(i-(res.fwd-1)/2)*tSide;
+      L.marker([bLat+Math.cos(hdgRad)*tOff-Math.sin(hdgRad)*s, bLng+Math.sin(hdgRad)*tOff+Math.cos(hdgRad)*s],
+        {icon:L.divIcon({className:'',
+          html:`<div style="background:rgba(0,15,25,0.9);border:2px solid #0ea5e9;border-radius:5px;padding:3px 7px;font-size:9px;font-family:monospace;font-weight:700;color:#0ea5e9;line-height:1.4;white-space:nowrap;">⚓ AV${i+1} · ${res.tugBP}t</div>`,
+          iconSize:[80,26],iconAnchor:[40,13]
+        })}).addTo(mnvMap).bindPopup(`Remorqueur Avant ${i+1} — BP ${res.tugBP}t`);
+    }
+    for(let i=0;i<res.aft;i++){
+      const s=(i-(res.aft-1)/2)*tSide;
+      L.marker([bLat-Math.cos(hdgRad)*tOff-Math.sin(hdgRad)*s, bLng-Math.sin(hdgRad)*tOff+Math.cos(hdgRad)*s],
+        {icon:L.divIcon({className:'',
+          html:`<div style="background:rgba(25,8,0,0.9);border:2px solid #f97316;border-radius:5px;padding:3px 7px;font-size:9px;font-family:monospace;font-weight:700;color:#f97316;line-height:1.4;white-space:nowrap;">⚓ AR${i+1} · ${res.tugBP}t</div>`,
+          iconSize:[80,26],iconAnchor:[40,13]
+        })}).addTo(mnvMap).bindPopup(`Remorqueur Arrière ${i+1} — BP ${res.tugBP}t`);
+    }
+  } else {
+    // Pas de berth sélectionné : tous les quais du port
+    port?.berths?.forEach(b=>{
+      if(!b.lat||!b.lng)return;
+      L.marker([b.lat,b.lng], {icon:L.divIcon({
+        className:'',
+        html:`<div style="width:10px;height:10px;border-radius:50%;background:${typeColor[b.type]||'#888'};border:2px solid white;"></div>`,
+        iconSize:[10,10], iconAnchor:[5,5]
+      })}).addTo(mnvMap).bindPopup(`<b>${b.name}</b><br>${b.type} · −${b.d}m`);
+    });
+  }
+
+  // ── HUD coin haut-droit ──
+  const hud=L.control({position:'topright'});
+  hud.onAdd=()=>{
+    const d=L.DomUtil.create('div');
+    d.style.cssText='background:rgba(255,255,255,0.92);border:1px solid #ccc;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:10px;line-height:1.8;max-width:220px;pointer-events:none;color:#222;';
+    const windKt=parseFloat(res.effW)||0, currKt=parseFloat(res.effCs)||0;
+    d.innerHTML=`<div style="color:#0369a1;font-weight:700">${String(Math.round(S.heading)).padStart(3,'0')}° — ${(MTYPES.find(m=>m.id===S.maneuverType)?.l||'').toUpperCase()}</div>`
+      +(port?`<div style="color:#555;font-size:9px">${port.name}${berth?' · '+berth.name.split('—').pop().trim():''}</div>`:'')
+      +`<div><span style="color:#7c3aed">💨 ${windKt}kt</span>  <span style="color:#059669">🌊 ${currKt}kt</span></div>`
+      +`<div style="color:#92400e">⚓ Flotte ${res.tugBP}t médiane</div>`;
+    L.DomEvent.disableClickPropagation(d);
+    return d;
+  };
+  hud.addTo(mnvMap);
+
+  // ── fitBounds sur l'ensemble de la route après 250ms ──
+  setTimeout(()=>{
+    if(!mnvMap)return;
+    mnvMap.invalidateSize({animate:false});
+    if(route && route.length>=2){
+      const pad=0.008;
+      mnvMap.fitBounds(
+        [[Math.min(...allLats)-pad, Math.min(...allLngs)-pad],
+         [Math.max(...allLats)+pad, Math.max(...allLngs)+pad]],
+        {padding:[45,45], maxZoom:14, animate:false}
+      );
+    } else if(berth?.lat){
+      mnvMap.setView([bLat,bLng],13);
+    }
+  }, 250);
+}
+
+// Fallback canvas (si pas de port défini ou L absent)
+function _startAnimCanvas(res){
+  const el=document.getElementById('mc');
+  if(!el)return;
+  el.innerHTML='';
+  const cv=document.createElement('canvas');
+  cv.style.cssText='width:100%;height:100%;display:block';
+  el.appendChild(cv);
+  const dpr=window.devicePixelRatio||1;
+  const W=el.offsetWidth||800,H=360;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+  _drawMnv(ctx,W,H,res);
+}
+
+function _drawMnv(ctx,W,H,res){
+  const port=getPort(),berth=getBerth();
+  const loa=fv('f-loa'),beam=fv('f-beam');
+  const layout=port?.canvasLayout;
+
+  // ── FOND EAU ──
+  ctx.fillStyle=layout?.water||'#06182a';
+  ctx.fillRect(0,0,W,H);
+
+  // ── TERRES (polygones) ──
+  if(layout?.land){
+    layout.land.forEach(l=>{
+      ctx.beginPath();
+      l.pts.forEach(([px,py],i)=>i?ctx.lineTo(px*W,py*H):ctx.moveTo(px*W,py*H));
+      ctx.closePath();
+      ctx.fillStyle=l.color||'#1d2b19';ctx.fill();
+      if(l.stroke){ctx.strokeStyle=l.stroke;ctx.lineWidth=1;ctx.stroke();}
+    });
+  }
+
+  // ── ZONES DE PROFONDEUR ──
+  if(layout?.depthZones){
+    layout.depthZones.forEach(z=>{
+      const intensity=Math.min(z.depth/25,1);
+      ctx.beginPath();ctx.arc(z.x*W,z.y*H,z.r*W,0,Math.PI*2);
+      const g=ctx.createRadialGradient(z.x*W,z.y*H,0,z.x*W,z.y*H,z.r*W);
+      g.addColorStop(0,`rgba(0,100,180,${0.12+intensity*0.1})`);
+      g.addColorStop(1,'rgba(0,100,180,0)');
+      ctx.fillStyle=g;ctx.fill();
+      ctx.fillStyle='rgba(100,180,255,0.28)';
+      ctx.font=`${Math.round(W/95)}px monospace`;ctx.textAlign='center';
+      ctx.fillText(z.label,z.x*W,z.y*H+3);
+    });
+  }
+
+  // ── CHENAUX ──
+  if(layout?.channels){
+    layout.channels.forEach(ch=>{
+      ctx.save();
+      ctx.strokeStyle='rgba(0,200,255,0.12)';ctx.lineWidth=18;ctx.lineCap='round';
+      ctx.beginPath();ch.pts.forEach(([px,py],i)=>i?ctx.lineTo(px*W,py*H):ctx.moveTo(px*W,py*H));ctx.stroke();
+      if(ch.axis){
+        ctx.strokeStyle='rgba(255,200,0,0.25)';ctx.lineWidth=1;ctx.setLineDash([6,8]);
+        ctx.beginPath();ch.pts.forEach(([px,py],i)=>i?ctx.lineTo(px*W,py*H):ctx.moveTo(px*W,py*H));ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    });
+  }
+
+  // ── QUAIS ──
+  if(layout?.quayWalls){
+    layout.quayWalls.forEach(q=>{
+      ctx.strokeStyle=q.c||'#4a7090';ctx.lineWidth=q.w||4;ctx.lineCap='square';
+      ctx.beginPath();ctx.moveTo(q.x1*W,q.y1*H);ctx.lineTo(q.x2*W,q.y2*H);ctx.stroke();
+    });
+  }
+
+  // ── MARQUEURS QUAIS ──
+  const typeColor={container:'#00d4ff',tanker:'#ff8c42',lng:'#a78bfa',bulkcarrier:'#ffa502',ropax:'#2ed573',cruise:'#ff4757'};
+  port?.berths?.forEach(b=>{
+    if(!b.px&&!b.py)return;
+    const bx=b.px*W,by=b.py*H;
+    const sel=b.id===S.berthId;
+    const col=typeColor[b.type]||'#aaa';
+    const r=sel?7:4;
+    ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.strokeStyle='white';ctx.lineWidth=sel?2:1;ctx.stroke();
+    if(sel){
+      // Halo sélection
+      ctx.beginPath();ctx.arc(bx,by,r+5,0,Math.PI*2);
+      ctx.strokeStyle=col+'55';ctx.lineWidth=3;ctx.stroke();
+    }
+  });
+
+  // ── TRAJECTOIRE ──
+  const mtype=S.maneuverType;
+  const entryPt=port?.entryPt||[0.06,0.5];
+  // Quai sélectionné ou point centre
+  const berthSel=port?.berths?.find(b=>b.id===S.berthId);
+  const qx=(berthSel?.px||0.75)*W,qy=(berthSel?.py||0.5)*H;
+  const rx=entryPt[0]*W,ry=entryPt[1]*H;
+  const mx=(rx+qx)/2+(qy-ry)*0.18,my=(ry+qy)/2-(qx-rx)*0.18;
+
+  const pathStart=mtype==='exit'?[qx,qy]:[rx,ry];
+  const pathEnd=mtype==='exit'?[rx,ry]:[qx,qy];
+
+  ctx.save();
+  ctx.strokeStyle='rgba(0,212,255,0.55)';ctx.lineWidth=2.5;ctx.setLineDash([10,7]);ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(...pathStart);ctx.quadraticCurveTo(mx,my,...pathEnd);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Flèches sur la trajectoire
+  const arrows=[[0.3,0.35],[0.6,0.65],[0.85,0.88]];
+  arrows.forEach(([t1,t2])=>{
+    const ax=quadPt(pathStart[0],mx,pathEnd[0],t1);
+    const ay=quadPt(pathStart[1],my,pathEnd[1],t1);
+    const bx2=quadPt(pathStart[0],mx,pathEnd[0],t2);
+    const by2=quadPt(pathStart[1],my,pathEnd[1],t2);
+    const ang=Math.atan2(by2-ay,bx2-ax);
+    ctx.fillStyle='rgba(0,180,220,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(ax+10*Math.cos(ang),ay+10*Math.sin(ang));
+    ctx.lineTo(ax-5*Math.cos(ang)+5*Math.cos(ang+Math.PI/2),ay-5*Math.sin(ang)+5*Math.sin(ang+Math.PI/2));
+    ctx.lineTo(ax-5*Math.cos(ang)-5*Math.cos(ang+Math.PI/2),ay-5*Math.sin(ang)-5*Math.sin(ang+Math.PI/2));
+    ctx.closePath();ctx.fill();
+  });
+  ctx.restore();
+
+  // ── LABELS RADE / QUAI ──
+  const labelZone=(x,y,txt,col)=>{
+    ctx.save();
+    ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);
+    ctx.fillStyle=col+'11';ctx.fill();
+    ctx.strokeStyle=col+'33';ctx.lineWidth=1.5;ctx.setLineDash([4,5]);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=col;ctx.font=`bold ${Math.round(W/85)}px monospace`;ctx.textAlign='center';
+    ctx.fillText(txt,x,y+4);
+    ctx.restore();
+  };
+  labelZone(...pathStart,mtype==='exit'?'QUAI':'RADE','#2ed573');
+  labelZone(...pathEnd,mtype==='exit'?'RADE':'QUAI','#00d4ff');
+  if(berthSel){
+    ctx.fillStyle='rgba(0,180,220,0.6)';ctx.font=`${Math.round(W/105)}px monospace`;ctx.textAlign='center';
+    const bnShort=(berthSel.name.split('—')[1]?.trim()||berthSel.name).substring(0,16);
+    ctx.fillText(bnShort,pathEnd[0],pathEnd[1]+30);
+  }
+
+  // ── NAVIRE au quai ──
+  const shipAngle=berthSel?.hdg!==undefined?(berthSel.hdg*Math.PI/180):Math.atan2(pathEnd[1]-my,pathEnd[0]-mx);
+  const maxSL=Math.min(W*0.14,80),scl=Math.min(maxSL/Math.max(loa,50),0.5);
+  const sL=Math.max(loa*scl,18),sB=Math.max(beam*scl,5);
+  ctx.save();ctx.translate(pathEnd[0],pathEnd[1]);ctx.rotate(shipAngle);
+  const hg=ctx.createLinearGradient(-sL,-sB,sL,sB);
+  hg.addColorStop(0,'#0d2238');hg.addColorStop(.5,'#1a4060');hg.addColorStop(1,'#0e2030');
+  ctx.beginPath();
+  ctx.moveTo(-sL*0.85,-sB*0.8);
+  ctx.bezierCurveTo(-sL*0.3,-sB,sL*0.3,-sB*0.65,sL,0);
+  ctx.bezierCurveTo(sL*0.3,sB*0.65,-sL*0.3,sB,-sL*0.85,sB*0.8);
+  ctx.lineTo(-sL,0);ctx.closePath();
+  ctx.fillStyle=hg;ctx.fill();
+  ctx.strokeStyle='rgba(0,180,220,0.5)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='rgba(20,55,85,0.9)';ctx.fillRect(-sL*0.1,-sB*0.38,sL*0.28,sB*0.76);
+  ctx.restore();
+
+  // ── VECTEURS FORCES ──
+  const vScale=Math.min(W/160,3.2);
+  const vcx=pathEnd[0],vcy=pathEnd[1];
+  const drawVec=(angle_deg,len,col,label)=>{
+    if(len<4)return;
+    const a=(angle_deg-90)*Math.PI/180;
+    const ex=vcx+Math.cos(a)*len,ey=vcy+Math.sin(a)*len;
+    ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.lineCap='round';
+    ctx.shadowColor=col;ctx.shadowBlur=4;
+    ctx.beginPath();ctx.moveTo(vcx,vcy);ctx.lineTo(ex,ey);ctx.stroke();
+    // tête de flèche
+    const ah=Math.atan2(ey-vcy,ex-vcx);
+    ctx.fillStyle=col;ctx.beginPath();
+    ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-9*Math.cos(ah-0.4),ey-9*Math.sin(ah-0.4));
+    ctx.lineTo(ex-9*Math.cos(ah+0.4),ey-9*Math.sin(ah+0.4));
+    ctx.closePath();ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle=col;ctx.font=`bold ${Math.round(W/100)}px monospace`;ctx.textAlign='center';
+    ctx.fillText(label,ex+Math.cos(a)*13,ey+Math.sin(a)*13+3);
+    ctx.restore();
+  };
+  drawVec(S.windDir,Math.min(parseFloat(res.effW)*vScale,75),'rgba(167,139,250,0.9)',`${res.effW}kt`);
+  drawVec(parseFloat(res.effCd),Math.min(parseFloat(res.effCs)*vScale*5.5,65),'rgba(52,211,153,0.9)',`${res.effCs}kt`);
+  if(parseFloat(res.net)>5){
+    const driftDir=(parseFloat(res.effCd)+S.windDir)/2;
+    drawVec(driftDir,Math.min(parseFloat(res.vDriftKt)*vScale*8,55),'rgba(255,71,87,0.85)',`${res.vDriftKt}kt`);
+  }
+
+  // ── REMORQUEURS ──
+  const tugDist=sL+18;
+  for(let i=0;i<res.fwd;i++){
+    const off=(i-(res.fwd-1)/2)*20;
+    const ta=berthSel?.hdg!==undefined?(berthSel.hdg*Math.PI/180):Math.atan2(pathEnd[1]-my,pathEnd[0]-mx);
+    const tx=pathEnd[0]+Math.cos(ta)*tugDist+Math.cos(ta+Math.PI/2)*off;
+    const ty=pathEnd[1]+Math.sin(ta)*tugDist+Math.sin(ta+Math.PI/2)*off;
+    _drawTug(ctx,tx,ty,ta,'#00d4ff',`AV${i+1}`);
+    ctx.strokeStyle='rgba(0,212,255,0.18)';ctx.lineWidth=1;ctx.setLineDash([2,3]);
+    ctx.beginPath();ctx.moveTo(pathEnd[0]+Math.cos(ta)*sL*0.55,pathEnd[1]+Math.sin(ta)*sL*0.55);ctx.lineTo(tx,ty);ctx.stroke();ctx.setLineDash([]);
+  }
+  for(let i=0;i<res.aft;i++){
+    const off=(i-(res.aft-1)/2)*20;
+    const ta=berthSel?.hdg!==undefined?(berthSel.hdg*Math.PI/180):Math.atan2(pathEnd[1]-my,pathEnd[0]-mx);
+    const tx=pathEnd[0]-Math.cos(ta)*tugDist+Math.cos(ta+Math.PI/2)*off;
+    const ty=pathEnd[1]-Math.sin(ta)*tugDist+Math.sin(ta+Math.PI/2)*off;
+    _drawTug(ctx,tx,ty,ta+Math.PI,'#ff8c42',`AR${i+1}`);
+    ctx.strokeStyle='rgba(255,140,66,0.18)';ctx.lineWidth=1;ctx.setLineDash([2,3]);
+    ctx.beginPath();ctx.moveTo(pathEnd[0]-Math.cos(ta)*sL*0.55,pathEnd[1]-Math.sin(ta)*sL*0.55);ctx.lineTo(tx,ty);ctx.stroke();ctx.setLineDash([]);
+  }
+
+  // ── LÉGENDE ──
+  const legItems=[
+    {c:'rgba(167,139,250,0.85)',l:`Vent ${res.effW}kt`},
+    {c:'rgba(52,211,153,0.85)',l:`Courant ${res.effCs}kt`},
+    {c:'rgba(255,71,87,0.85)',l:`Dérive ${res.vDriftKt}kt`},
+    {c:'rgba(0,212,255,0.85)',l:`Tug AV ×${res.fwd}`},
+    {c:'rgba(255,140,66,0.85)',l:`Tug AR ×${res.aft}`},
+  ];
+  ctx.font=`${Math.round(W/105)}px monospace`;ctx.textAlign='left';
+  legItems.forEach(({c,l},i)=>{
+    const col=i%3,row=Math.floor(i/3);
+    const lx=9+col*Math.round(W/3.1),ly=H-26+row*13;
+    ctx.fillStyle=c;ctx.fillRect(lx,ly-7,12,7);
+    ctx.fillStyle='rgba(180,200,225,0.65)';ctx.fillText(l,lx+16,ly);
+  });
+
+  // ── HUD haut-droite ──
+  ctx.textAlign='right';ctx.fillStyle='rgba(0,200,255,0.8)';ctx.font=`bold ${Math.round(W/80)}px monospace`;
+  ctx.fillText(`${String(Math.round(S.heading)).padStart(3,'0')}° — ${(MTYPES.find(m=>m.id===S.maneuverType)?.l||'').toUpperCase()}`,W-9,16);
+  ctx.fillStyle='rgba(255,255,255,0.22)';ctx.font=`${Math.round(W/105)}px monospace`;
+  ctx.fillText(port?.name||'',W-9,28);
+  // BP flotte
+  ctx.fillStyle='rgba(255,165,50,0.7)';
+  ctx.fillText(`Flotte: ${res.tugBP}t/tug (médiane)`,W-9,40);
+}
+
+function quadPt(a,b,c,t){return (1-t)*(1-t)*a+2*(1-t)*t*b+t*t*c;}
+
+function _drawTug(ctx,x,y,ang,col,label){
+  const sz=11;
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);
+  ctx.fillStyle=col+'25';ctx.strokeStyle=col;ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(-sz*0.55,-sz*0.4);ctx.lineTo(sz*0.65,-sz*0.4);
+  ctx.lineTo(sz*0.85,0);ctx.lineTo(sz*0.65,sz*0.4);
+  ctx.lineTo(-sz*0.55,sz*0.4);ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle=col;ctx.font=`bold ${Math.round(sz*0.9)}px monospace`;ctx.textAlign='center';
+  ctx.fillText(label,x,y-sz-2);
+}
+
+// ══════════════════════════════════════════════════
+// RÉSULTATS + EXPORT PDF
+// ══════════════════════════════════════════════════
+function renderResults(res){
+  const dc=res.difficulty<=3?'#2ed573':res.difficulty<=6?'#ffa502':'#ff4757';
+  const port=getPort(),berth=getBerth(),vt=VTYPES.find(v=>v.id===S.vesselType);
+  document.getElementById('res-sub').textContent=`${vt?.l||''} ${fv('f-loa')}m${port?` · ${port.name}`:''}${berth?` · ${berth.name}`:''}`;
+  const vbox=document.getElementById('vbox');
+  vbox.style.cssText+=`;background:rgba(${res.tugs===0?"46,213,115":res.tugs<=2?"46,213,115":res.tugs<=4?"255,165,2":"255,71,87"},0.04);border:2px solid ${res.tugs===0?"#2ed573":res.tugs<=2?"#2ed573":res.tugs<=4?"#ffa502":"#ff4757"}20`;
+  document.getElementById('tug-n').textContent=res.tugs===0?'0 — Manœuvre autonome possible':res.tugs;
+  document.getElementById('tug-n').style.color=dc;
+  document.getElementById('tug-f').textContent=res.fwd;
+  document.getElementById('tug-a').textContent=res.aft;
+  document.getElementById('dif-d').innerHTML=Array.from({length:10},(_,i)=>`<div class="d" style="background:${i<res.difficulty?dc:'rgba(255,255,255,0.07)'}"></div>`).join('');
+  document.getElementById('dif-s').style.color=dc;
+  document.getElementById('dif-s').textContent=`${res.difficulty}/10`;
+
+  // ── Boîte BP ──
+  document.getElementById('bp-res-v').textContent=`${res.tugBP}t médiane flotte (${res.fleetSize} tugs dispo)`;
+  const bpBox=document.getElementById('bp-res');
+  const fleetHtml=res.fleetBPs.length
+    ? `<div style="font-size:8px;color:var(--muted);margin-top:3px">Flotte: min ${res.fleetBPs[0]}t · médiane ${res.tugBP}t · max ${res.fleetBPs[res.fleetBPs.length-1]}t</div>`
+    : '';
+  const existingMini=bpBox.querySelector('.fleet-mini');
+  if(existingMini)existingMini.remove();
+  if(fleetHtml){const d=document.createElement('div');d.className='fleet-mini';d.innerHTML=fleetHtml;bpBox.appendChild(d);}
+
+  // ── Propulsion ──
+  const pb=document.getElementById('prop-box');
+  const propTot=(parseFloat(res.Fp_etrave)+parseFloat(res.Fp_poupe)+parseFloat(res.Fp_main_Y)).toFixed(1);
+  if(parseFloat(res.propPct)>0){pb.style.display='block';document.getElementById('prop-val').textContent=`-${res.propPct}% (${propTot}kN transversal)`;}
+  else pb.style.display='none';
+
+  // ── VERDICT 3 COUCHES ──
+  const v3el=document.getElementById('verdict3');
+  if(v3el){
+    const physColor=res.tugs_phys===0?'var(--green)':res.tugs_phys<=2?'var(--green)':res.tugs_phys<=4?'var(--orange)':'var(--red)';
+    const regColor=res.tugs_reg===0?'var(--muted)':res.tugs_reg<=2?'var(--green)':res.tugs_reg<=4?'var(--orange)':'var(--red)';
+    const finColor=res.tugs===0?'var(--green)':res.tugs<=2?'var(--green)':res.tugs<=4?'var(--orange)':'var(--red)';
+    const physLabel=res.tugs_phys===0?'Manœuvre autonome possible':'tugs requis';
+    const regLabel=res.triggeredRules.length===0?'Aucune règle déclenchée':'';
+    v3el.innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Physique</div>
+          <div style="font-size:20px;font-weight:800;color:${physColor}">${res.tugs_phys}</div>
+          <div style="font-size:9px;color:var(--muted)">${physLabel}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Réglementaire</div>
+          <div style="font-size:20px;font-weight:800;color:${regColor}">${res.tugs_reg}</div>
+          <div style="font-size:9px;color:var(--muted)">${regLabel||res.triggeredRules.length+' règle(s)'}</div>
+        </div>
+        <div style="background:rgba(${res.tugs===0?"46,213,115":res.tugs<=2?"46,213,115":res.tugs<=4?"255,165,2":"255,71,87"},0.06);border:1px solid ${finColor}30;border-radius:7px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Recommandation</div>
+          <div style="font-size:22px;font-weight:900;color:${finColor}">${res.tugs}</div>
+          <div style="font-size:9px;color:${finColor}">${res.tugs===0?'Autonome':'max(physique, rég.)'}</div>
+        </div>
+      </div>
+      ${res.triggeredRules.length>0?`<div style="margin-top:4px">${res.triggeredRules.map(r=>`
+        <div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-top:1px solid rgba(255,255,255,0.04);font-size:10px">
+          <span style="color:var(--orange);font-weight:700;min-width:18px;text-align:center">${r.min}</span>
+          <span style="color:var(--muted)">${r.src}</span>
+        </div>`).join('')}</div>`:''}
+      ${res.tugs_phys===0&&res.tugs_reg===0?`<div style="font-size:10px;color:var(--green);background:rgba(46,213,115,0.06);border:1px solid rgba(46,213,115,0.2);border-radius:6px;padding:7px 10px;margin-top:6px">
+        ✓ Manœuvre sans remorqueur physiquement envisageable — propulsion propre suffit dans ces conditions
+      </div>`:''}
+      ${res.tugs_phys<res.tugs_reg?`<div style="font-size:10px;color:var(--orange);background:rgba(255,165,2,0.05);border:1px solid rgba(255,165,2,0.2);border-radius:6px;padding:7px 10px;margin-top:6px">
+        ⚠ Le règlement est plus contraignant que la physique dans ce cas (${res.tugs_phys} physique vs ${res.tugs_reg} réglementaire)
+      </div>`:''}`;
+  }
+
+  // ── Bilan des forces modèle B ──
+  document.getElementById('forces').innerHTML=[
+    ["Vent effectif",       `${res.effW}kt / ${res.effWms}m/s · ${dirLabel(S.windDir)} ${S.windDir}°`, "#a78bfa"],
+    ["Courant combiné",     `${res.effCs}kt / ${res.effCsms}m/s · ${res.effCd}°`,                      "#34d399"],
+    ["Fw⊥ vent transv.",   `${res.Fw_Y}kN  ·  F‖ ${res.Fw_X}kN`,                                     "#ff4757"],
+    ["Fc⊥ courant transv.",`${res.Fc_Y}kN  ·  F‖ ${res.Fc_X}kN`,                                     "#ff6b81"],
+    ["−  Prop. étrave",    `-${res.Fp_etrave}kN  ·  poupe -${res.Fp_poupe}kN  ·  azipod -${res.Fp_main_Y}kN`, "#ff8c42"],
+    ["Fy résiduel",         `${res.Fy_res}kN  ·  Mz ${res.Mz_res}kN·m`,                               "#dde8f2"],
+    ["BP requis",           `${res.BPreq}t  (SF×${res.sf})`,                                           "#00d4ff"],
+    ["Franc-bord",          `${res.franc_bord}m  (Ht ${res.H_total}m − tirant ${fv('f-draft')}m)`,    "#a78bfa"],
+    ["Vitesse dérive",      `${res.vDriftKt}kt / ${res.vDriftMs}m/s`,                                  "#ff4757"],
+  ].map(([l,v,c])=>`<div class="fc"><div class="flab">${l}</div><div class="fval" style="color:${c};font-size:11px">${v}</div></div>`).join('');
+
+  const engNote=document.getElementById('eng-note');
+  if(engNote){
+    const prop=PROPS.find(p=>p.id===S.propType);
+    engNote.innerHTML=`<b style="color:rgba(255,165,100,.8)">📐 Modèle B — Bilan en repère navire :</b><br>
+Surface vélique = franc-bord × LOA = <b>${res.franc_bord}m × ${fv('f-loa')}m</b> (hauteur réelle hors-eau)<br>
+Forces transversales : Fw⊥=${res.Fw_Y}kN · Fc⊥=${res.Fc_Y}kN → Résidu=${res.Fy_res}kN après propulseurs<br>
+Moment lacet : Mz=${res.Mz_res}kN·m → répartition asymétrique AV/AR (${res.N_av_phys}/${res.N_ar_phys})<br>
+Efficacité câble : BP × cos(15°) = <b>${Math.round(Math.cos(15*Math.PI/180)*100)}%</b> en force transversale utile<br>
+Hélice principale ${prop?.l||'—'} : propulsion longitudinale seule (${S.propType==='azipod'?'azipod → 60% transférable en Y':' non transférable en Y'})`;
+  }
+
+  const rc={high:"#ff4757",med:"#ffa502",low:"#2ed573",info:"#00d4ff"};
+  const rl={high:"ALERTE",med:"ATTN",low:"OK",info:"INFO"};
+  document.getElementById('risks').innerHTML=res.risks.map(r=>`<div class="ri" style="background:${rc[r.lv]}08;border:1px solid ${rc[r.lv]}18">
+    <span class="rb" style="color:${rc[r.lv]};background:${rc[r.lv]}18">${rl[r.lv]}</span>
+    <span class="rt">${r.t}</span></div>`).join('');
+
+  const tps=document.getElementById('tug-port-sel');
+  if(tps){tps.value=S.portId;}
+  const lbl=document.getElementById('tug-port-lbl');
+  if(lbl)lbl.textContent=port?.name||'';
+  buildTugDB();
+}
+
+function exportPDF(){
+  const port=getPort(),berth=getBerth(),vt=VTYPES.find(v=>v.id===S.vesselType);
+  const now=new Date().toLocaleString('fr-FR');
+  const res=computeResult();
+  const imoVal=document.getElementById('imo-input')?.value||'—';
+  const verdictClass=res.difficulty<=3?'ok':res.difficulty<=6?'warn':'nogo';
+  const verdictTxt=res.difficulty<=3?'✅ GO — Conditions nominales':res.difficulty<=6?'⚠️ GO AVEC PRÉCAUTIONS':'🚫 NO-GO — Conditions critiques';
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport manœuvre — ${port?.name||'—'}</title>
+  <style>
+    *{box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;max-width:740px;margin:0 auto;padding:28px 32px;color:#1a2530;font-size:11px;line-height:1.5}
+    h1{font-size:18px;color:#003b5c;border-bottom:3px solid #003b5c;padding-bottom:8px;margin-bottom:14px}
+    h2{font-size:12px;color:#005a85;margin:14px 0 5px;text-transform:uppercase;letter-spacing:.05em}
+    table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:10px}
+    td,th{padding:5px 8px;border:1px solid #dde;text-align:left}
+    th{background:#eef4fa;color:#003b5c;font-weight:700;font-size:9px;text-transform:uppercase}
+    .verdict{font-size:14px;font-weight:800;padding:10px 14px;border-radius:7px;margin:12px 0;text-align:center}
+    .ok{background:#e6f7ee;color:#1a6b3a;border:2px solid #5cb87a}
+    .warn{background:#fff8e8;color:#7a4800;border:2px solid #f0a500}
+    .nogo{background:#fdf0f0;color:#8b0000;border:2px solid #d45050}
+    .tugs{font-size:26px;font-weight:900;display:block;margin-bottom:3px}
+    .risk-high{color:#c00;font-weight:700}.risk-med{color:#a55000}.risk-low{color:#1a6b3a}.risk-info{color:#005a85}
+    .footer{font-size:9px;color:#aaa;margin-top:20px;padding-top:8px;border-top:1px solid #dde}
+    @page{margin:15mm} @media print{body{padding:0}}
+  </style></head><body>
+  <h1>⚓ RAPPORT DE MANŒUVRE — HARBOUR PILOT</h1>
+  <table><tr><th colspan="2">Identification</th></tr>
+    <tr><td><b>Date/heure</b></td><td>${now}</td></tr>
+    <tr><td><b>IMO</b></td><td>${imoVal}</td></tr>
+    <tr><td><b>Port</b></td><td>${port?.name||'—'}</td></tr>
+    <tr><td><b>Quai</b></td><td>${berth?.name||'—'}</td></tr>
+    <tr><td><b>Manœuvre</b></td><td>${MTYPES.find(m=>m.id===S.maneuverType)?.l||'—'}</td></tr>
+  </table>
+  <h2>Navire</h2>
+  <table><tr><th>Type</th><th>LOA</th><th>Largeur</th><th>Tirant</th><th>DWT</th><th>Puissance</th><th>Hélice</th></tr>
+    <tr><td>${vt?.l||S.vesselType}</td><td>${fv('f-loa')}m</td><td>${fv('f-beam')}m</td><td>${fv('f-draft')}m</td><td>${fv('f-dwt').toLocaleString()}t</td><td>${fv('f-engine').toLocaleString()}kW<br>≈${Math.round(fv('f-engine')*1.341).toLocaleString()} ch</td><td>${PROPS.find(p=>p.id===S.propType)?.l||'—'}</td></tr>
+  </table>
+  <h2>Conditions météo</h2>
+  <table><tr><th>Vent brut</th><th>Vent effectif</th><th>Courant combiné</th><th>Cap accostage</th><th>Beaufort</th></tr>
+    <tr><td>${S.windKt}kt / ${S.windDir}°</td><td>${res.effW}kt (${res.effWms}m/s)</td><td>${res.effCs}kt (${res.effCsms}m/s) / ${res.effCd}°</td><td>${S.heading}°</td><td>${bftLabel(S.windKt)}</td></tr>
+  </table>
+  <h2>Bilan des forces — Modèle B (repère navire)</h2>
+  <table><tr><th>Fw⊥ vent</th><th>Fc⊥ courant</th><th>Prop. étrave</th><th>Prop. poupe/azipod</th><th>Fy résiduel</th><th>SF</th><th>BP requis</th></tr>
+    <tr><td>${res.Fw_Y}kN</td><td>${res.Fc_Y}kN</td><td>-${res.Fp_etrave}kN</td><td>-${res.Fp_poupe}kN / -${res.Fp_main_Y}kN</td><td>${res.Fy_res}kN</td><td>×${res.sf}</td><td><b>${res.BPreq}t</b></td></tr>
+  </table>
+  <table><tr><th>Physique</th><th>Réglementaire</th><th>Recommandation finale</th><th>Distribution</th></tr>
+    <tr><td>${res.tugs_phys} tugs</td><td>${res.tugs_reg} tugs ${res.triggeredRules.length>0?'('+res.triggeredRules.map(r=>r.src).join(', ')+')':''}</td><td><b>${res.tugs} tugs</b></td><td>${res.fwd} av / ${res.aft} arr</td></tr>
+  </table>
+  <div class="verdict ${verdictClass}">
+    <span class="tugs">${res.tugs} REMORQUEURS — ${res.fwd} av / ${res.aft} arr</span>
+    Difficulté ${res.difficulty}/10 &nbsp;·&nbsp; BP réf. flotte ${res.tugBP}t/tug (médiane ${res.fleetSize} tugs) &nbsp;·&nbsp; ${verdictTxt}
+  </div>
+  <h2>Points de vigilance</h2>
+  <table><tr><th>Niveau</th><th>Observation</th></tr>
+    ${res.risks.map(r=>`<tr><td class="risk-${r.lv}">${r.lv.toUpperCase()}</td><td>${r.t}</td></tr>`).join('')}
+  </table>
+  <div class="footer">Généré par HARBOUR PILOT le ${now} &nbsp;·&nbsp; Document d'aide à la décision uniquement &nbsp;·&nbsp; La responsabilité opérationnelle incombe au pilote et au commandant.</div>
+  </body></html>`;
+  // Blob URL pour éviter blocage popup
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`rapport-manoeuvre-${port?.id||'port'}-${new Date().toISOString().slice(0,10)}.html`;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},2000);
+  // Notification
+  const btn=document.getElementById('export-btn');
+  if(btn){const orig=btn.innerHTML;btn.innerHTML='✓ Téléchargé !';btn.style.color='var(--green)';setTimeout(()=>{btn.innerHTML=orig;btn.style.color='';},2500);}
+}
+
+// ══════════════════════════════════════════════════
+// IA + CALCUL PRINCIPAL
+// ══════════════════════════════════════════════════
+async function callAI(res,port,berth){
+  const vt=VTYPES.find(v=>v.id===S.vesselType);
+  const imoVal=document.getElementById('imo-input')?.value||'—';
+  const regText=res.triggeredRules.length>0?res.triggeredRules.map(r=>`${r.min} tugs (${r.src})`).join(', '):'aucune règle déclenchée';
+  const prompt=`Tu es pilote maritime expert. Rapport concis 4 paragraphes (max 320 mots) en français:\n1. Analyse conditions : vent effectif ${res.effW}kt/${res.effWms}m/s dir ${S.windDir}°, courant ${res.effCs}kt, angle vent/navire → forces transversales Fw⊥=${res.Fw_Y}kN Fc⊥=${res.Fc_Y}kN\n2. Justification ${res.tugs} remorqueurs : physique=${res.tugs_phys} (Fy résiduel=${res.Fy_res}kN, Mz=${res.Mz_res}kN·m) · réglementaire=${res.tugs_reg} [${regText}] · distribution ${res.fwd}av/${res.aft}ar\n3. Rôle de la propulsion propre : étrave ${res.Fp_etrave}kN, poupe ${res.Fp_poupe}kN, azipod ${res.Fp_main_Y}kN → réduction ${res.propPct}% de la force brute. Flotte: ${res.fleetSize} tugs BP médiane ${res.tugBP}t\n4. Verdict GO / GO AVEC PRÉCAUTIONS / NO-GO avec justification opérationnelle pour ${berth?.name||'ce quai'}\n\nDonnées: IMO ${imoVal} · ${vt?.l||''} · LOA ${fv('f-loa')}m tirant ${fv('f-draft')}m franc-bord ${res.franc_bord}m · BP requis ${res.BPreq}t · Difficulté ${res.difficulty}/10`;
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:prompt}]})});
+  const d=await r.json();
+  return d.content?.map(b=>b.text||"").join("")||"Erreur API.";
+}
+
+async function doCompute(){
+  const res=computeResult();
+  document.getElementById('form-sec').style.display='none';
+  document.getElementById('res-sec').style.display='block';
+  renderResults(res);
+  // Double rAF + 120ms : garantit que le navigateur a peint res-sec avant que Leaflet mesure #mc
+  requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>startAnim(res),120)));
+  document.getElementById('ai-spin').style.display='inline-flex';
+  document.getElementById('ai-txt').textContent='Génération du rapport expert…';
+  try{
+    const ai=await callAI(res,getPort(),getBerth());
+    document.getElementById('ai-txt').textContent=ai;
+  }catch(e){
+    document.getElementById('ai-txt').textContent='Connexion IA indisponible — analyse physique disponible ci-dessus.';
+  }
+  document.getElementById('ai-spin').style.display='none';
+}
+function showForm(){if(animF){cancelAnimationFrame(animF);animF=null;}document.getElementById('res-sec').style.display='none';document.getElementById('form-sec').style.display='block';}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+function initUI(){
+  // Types navire
+  const vg=document.getElementById('vtype');
+  VTYPES.forEach(v=>{const b=document.createElement('button');b.className='sb'+(v.id===S.vesselType?' on':'');b.innerHTML=`<span class="ic">${v.ic}</span>${v.l}`;b.onclick=()=>{S.vesselType=v.id;document.querySelectorAll('#vtype .sb').forEach(x=>x.classList.remove('on'));b.classList.add('on');onDim();};vg.appendChild(b);});
+  // Manœuvres
+  const mg=document.getElementById('mtype');
+  MTYPES.forEach(m=>{const b=document.createElement('button');b.className='sb'+(m.id===S.maneuverType?' on':'');b.innerHTML=`<span class="ic">${m.ic}</span>${m.l}`;b.onclick=()=>{S.maneuverType=m.id;document.querySelectorAll('#mtype .sb').forEach(x=>x.classList.remove('on'));b.classList.add('on');};mg.appendChild(b);});
+  // Hélices
+  const pg=document.getElementById('prop-grid');
+  PROPS.forEach(p=>{const b=document.createElement('button');b.className='sb'+(p.id===S.propType?' on':'');b.style.cssText='text-align:left;font-size:10px;padding:6px 8px';b.innerHTML=`${p.l} <span style="color:var(--dim)">×${p.m}</span>`;b.onclick=()=>{S.propType=p.id;document.querySelectorAll('#prop-grid .sb').forEach(x=>x.classList.remove('on'));b.classList.add('on');};pg.appendChild(b);});
+  // Conditions portuaires
+  const pcg=document.getElementById('pcond');
+  PCONDS.forEach(c=>{const b=document.createElement('button');b.className='sb'+(c.id===S.portCondition?' on':'');b.style.cssText='text-align:left;padding:7px 9px';b.innerHTML=`<div style="font-size:12px;margin-bottom:2px">${c.ic} <b style="font-size:10px">${c.l}</b> <span style="font-size:9px;color:var(--orange)">×${c.f}</span></div><div style="font-size:9px;color:var(--muted)">${c.d}</div>`;b.onclick=()=>{S.portCondition=c.id;document.querySelectorAll('#pcond .sb').forEach(x=>x.classList.remove('on'));b.classList.add('on');};pcg.appendChild(b);});
+  // Ports
+  buildPortSel();
+  // Select td-port (outil marée)
+  const tds=document.getElementById('td-port');
+  if(tds)PORTS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;tds.appendChild(o);});
+  // Select tug-port-sel (outil remorqueurs) — pré-peuplé par buildTugDB
+  const tps=document.getElementById('tug-port-sel');
+  if(tps){PORTS.filter(p=>TUGS_DB[p.id]).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;tps.appendChild(o);});tps.value=S.portId||'marseille';}
+  // Compas
+  drawCmp('cmp-w',315,'#a78bfa');drawCmp('cmp-c',90,'#34d399');drawCmp('cmp-h',315,'#00d4ff');
+  document.getElementById('wdir-l').textContent=dirLabel(315);
+  document.getElementById('cdir-l').textContent=dirLabel(90);
+  document.getElementById('hdg-l').textContent=dirLabel(315);
+  document.getElementById('w-bft').textContent=bftLabel(18);
+  updEng();updAngles();updSum();updBar();
+  loadWxOM();
+  // Raccourci clavier Enter sur IMO
+  document.getElementById('imo-input').addEventListener('keydown',e=>{if(e.key==='Enter')lookupIMO();});
+}
+
+setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('fr-FR');},1000);
+document.addEventListener('DOMContentLoaded',initUI);
+</script>
+<!-- Leaflet chargé EN DERNIER pour éviter ReferenceError -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onload="if(document.getElementById('panel-port')?.classList.contains('on'))initMap()"></script>
+<script>
+// ── PWA Service Worker Registration ──
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js")
+      .then(r=>console.log("[PWA] SW enregistré:",r.scope))
+      .catch(e=>console.warn("[PWA] SW échec:",e));
+  });
+}
+</script>
+</body>
+</html>
