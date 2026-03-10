@@ -1,33 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 
-<!-- fond -->
-<rect width="512" height="512" fill="#0f172a"/>
+<defs>
+<radialGradient id="glow">
+<stop offset="0%" stop-color="#4ade80"/>
+<stop offset="100%" stop-color="#020617"/>
+</radialGradient>
+</defs>
 
-<!-- cercle -->
-<circle cx="256" cy="256" r="200"
-stroke="#38bdf8"
+<rect width="512" height="512" rx="110" fill="#020617"/>
+
+<circle cx="256" cy="256" r="160"
+fill="url(#glow)"
+opacity="0.3"/>
+
+<polygon points="256,100 300,300 256,260 212,300"
+fill="#4ade80"/>
+
+<circle cx="256" cy="256" r="160"
+stroke="#4ade80"
 stroke-width="6"
 fill="none"/>
-
-<!-- symbole navigation -->
-<polygon points="256,120 300,280 256,250 212,280"
-fill="#22c55e"/>
-
-<!-- vague -->
-<path d="M150 330 Q200 300 256 330 T360 330"
-stroke="#38bdf8"
-stroke-width="8"
-fill="none"/>
-
-<!-- texte -->
-<text x="256"
-y="420"
-text-anchor="middle"
-font-size="42"
-font-family="Arial"
-fill="#e2e8f0"
-font-weight="bold">
-HARBOUR PILOT
-</text>
 
 </svg>
